@@ -132,7 +132,7 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 <section class="board bear"><h2>Bearish <small id="nr"></small></h2><div class="list" id="bear"></div></section>
 </main>
 <section id="positions" aria-labelledby="position-heading">
-<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins where price is inside a valid order-block zone (one not yet closed through) or within 1% of its near edge. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Shows up to 6 per side, closest first. Informational only, not a recommendation.</p></div>
+<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins where price is inside a valid order-block zone right now (one not yet closed through), so an entry is possible. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Shows up to 6 per side, newest zone first. Informational only, not a recommendation.</p></div>
 <div class="position-grid">
 <section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="empty">Waiting for market data.</div></div></section>
 <section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="empty">Waiting for market data.</div></div></section>
@@ -305,7 +305,7 @@ function positionDistance(price,o,side){
   const p=zoneProx(price,o,side);if(p.through)return null;
   return {inside:p.inside,distance:p.dist};
 }
-function positionCandidates(r,side){return (r.positionOB?.[side]||[]).map(o=>({r,o,...positionDistance(r.price,o,side)})).filter(x=>x.distance!==undefined&&x.distance<=1)}
+function positionCandidates(r,side){return (r.positionOB?.[side]||[]).map(o=>({r,o,...positionDistance(r.price,o,side)})).filter(x=>x.inside===true)}
 function positionRows(side){
   // One nearest zone per coin and direction; prefer the newest on an equal distance.
   return results.map(r=>positionCandidates(r,side).sort((a,b)=>a.distance-b.distance||b.o.formationTime-a.o.formationTime)[0]).filter(Boolean).sort((a,b)=>a.distance-b.distance||a.o.age-b.o.age||a.r.sym.localeCompare(b.r.sym));
@@ -316,7 +316,7 @@ function renderPositions(){
   for(const [side,name] of [["bull","long"],["bear","short"]]){
     const all=positionRows(side),rows=all.slice(0,share?5:6);
     $("position-"+name+"-count").textContent=rows.length<all.length?`top ${rows.length} of ${all.length}`:`${all.length} coin${all.length===1?"":"s"}`;
-    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span>Edge gap <b>${distance.toFixed(2)}%</b></span><span>Age <b>${o.age} candles</b></span></div><div class="det">${tradePlan(r,side,o)}</div></div>`).join(""):'<div class="empty">No coins in zone right now or within 1%.</div>';
+    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span>Age <b>${o.age} candles</b></span></div><div class="det">${tradePlan(r,side,o)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
   }
 }
 function hostLabel(h){return h?"Binance spot via "+h.replace("https://",""):"unknown host"}
