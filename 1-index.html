@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SignalSutra · crypto structure scanner</title>
+<meta name="description" content="SignalSutra scans the top Binance USDT pairs for candle-pattern zones and price levels. Educational tool, not financial advice.">
+<meta name="theme-color" content="#0b0f17">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SignalSutra">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2360a5fa'/%3E%3Cstop offset='1' stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='%230b0f17'/%3E%3Cpath d='M5 18h5l3-8 5 14 3-9 2 3h4' fill='none' stroke='url(%23g)' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#0b0f17;--card:#121826;--line:#1f2937;--tx:#e5e7eb;--mut:#8b95a7;--g:#22c55e;--r:#ef4444;--b:#60a5fa}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;flex-direction:column;min-height:100vh}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+h1{font-size:16px;margin:0;margin-right:auto;font-weight:650}
+h1 .tagline{color:var(--mut);font-weight:400;font-size:12px;margin-left:10px}svg.logo{width:30px;height:30px;background:none;border-radius:0;flex:none}.brand{display:inline-flex;align-items:center;gap:8px;vertical-align:middle;margin:0!important}.brand b{font-size:17px;letter-spacing:.2px;color:var(--tx)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--card);color:var(--mut);border:0;padding:6px 12px;cursor:pointer;font:inherit}
+.seg button.on{background:var(--b);color:#06101f;font-weight:600}
+button.act{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}
+label{color:var(--mut);font-size:12px;display:flex;align-items:center;gap:6px}
+body.share header .ctl,body.share #status,body.share .det{display:none!important}body.share header{justify-content:center}body.share .list{max-height:none}body.share #src{display:block}
+#src{display:none;color:var(--mut);font-size:12px;padding:6px 14px}
+#status{color:var(--mut);font-size:12px;padding:6px 14px}
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 12px}
+@media(max-width:820px){main{grid-template-columns:1fr}}
+.board{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.board h2{margin:0;padding:10px 12px;font-size:14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.bull h2{color:var(--g)}.bear h2{color:var(--r)}
+.board h2 small{color:var(--mut);font-weight:400}
+.list{min-height:200px}
+@media(max-width:820px){.list{max-height:none}}
+.row{padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:#161e30}
+.top{display:flex;align-items:center;gap:10px}
+.sym{font-weight:650;width:62px}
+.px{color:var(--mut);font-size:12px;flex:1}
+.chg{font-size:12px;width:52px;text-align:right}
+.score{width:42px;text-align:center;border-radius:6px;font-weight:700;padding:2px 0;color:#06101f}
+.bull .score{background:var(--g)}.bear .score{background:var(--r)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:5px;font-size:12px;color:var(--mut)}
+.meta b{color:var(--tx);font-weight:550}
+.tag{padding:0 6px;border-radius:4px;border:1px solid var(--line);font-size:11px}
+.tag.in{border-color:#f59e0b;color:#f59e0b}
+.det{display:none;margin-top:8px}.row.open .det{display:block}
+svg{width:100%;height:170px;background:#0e1420;border-radius:6px}
+.empty{padding:20px;color:var(--mut);text-align:center}
+footer{padding:10px 14px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);text-align:center}
+
+/* Alerts use the scanner's existing palette and stay out of Share view. */
+#alerts{margin:0 14px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.alert-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.alert-head h2{font-size:14px;margin:0 auto 0 0}.alert-controls{display:flex;flex-wrap:wrap;gap:6px 14px;padding:6px 12px}
+.alert-controls label{min-height:36px;color:var(--tx)}#alert-help,#notify-status{color:var(--mut);font-size:12px;padding:0 12px 8px;margin:0}
+#alert-log{max-height:215px;overflow:auto;list-style:none;padding:0;margin:0}.alert-item{padding:9px 12px;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.alert-title{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}.alert-title b{font-weight:650}.alert-time{margin-left:auto;color:var(--mut);font-size:11px}.alert-detail{font-size:12px;margin-top:3px;color:var(--mut)}.watch-bull{color:var(--g)}.watch-bear{color:var(--r)}
+#toasts{position:fixed;right:14px;bottom:14px;width:min(380px,calc(100vw - 28px));z-index:20;display:grid;gap:8px;pointer-events:none}.toast{background:#182235;border:1px solid #40516f;border-radius:10px;box-shadow:0 4px 22px #0008;padding:12px;pointer-events:auto;overflow-wrap:anywhere}.toast button{float:right;background:none;border:0;color:var(--tx);cursor:pointer;font-size:20px}.toast p{font-size:12px;margin:5px 0 0;color:var(--mut)}
+body.share #alerts,body.share #toasts{display:none!important}
+@media(max-width:820px){#toasts .toast:not(:first-child){display:none}.alert-head button{min-height:44px}.alert-controls label{min-height:44px}}
+/* Position Builder is independent of momentum scores. */
+#positions{margin:0 14px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+.position-head{padding:12px;border-bottom:1px solid var(--line)}.position-head h2{margin:0 0 4px;font-size:16px}.position-head p{margin:0;color:var(--mut);font-size:12px}
+.position-grid{display:grid;grid-template-columns:1fr 1fr}.position-side{min-width:0}.position-side+ .position-side{border-left:1px solid var(--line)}
+.position-side h3{margin:0;padding:10px 12px;font-size:14px;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line)}.position-side h3 small{color:var(--mut);font-weight:400}
+.position-row{padding:10px 12px;border-bottom:1px solid var(--line)}.position-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.position-top b{margin-right:auto}.position-long{color:var(--g)}.position-short{color:var(--r)}
+.position-list{max-height:none;overflow:auto}.position-row:last-child{border-bottom:0}.position-state{border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;color:var(--mut)}
+.position-row .meta{gap:5px 14px}.position-near{color:#f59e0b;font-size:12px}
+body.share .position-head h2{font-size:16px}body.share .position-head p{display:none}body.share .position-list{max-height:none}body.share .position-row{padding:7px 12px}
+@media(max-width:820px){.position-grid{grid-template-columns:1fr}.position-side+ .position-side{border-left:0;border-top:1px solid var(--line)}.position-list{max-height:none}}
+@media(max-width:440px){h1 .tagline{display:block;margin:2px 0 0}.ctl{min-height:36px}.position-head p{line-height:1.6}}
+
+.row:focus-visible,.position-row:focus-visible{outline:2px solid var(--b);outline-offset:-2px}.plan-link{margin-top:8px;min-height:36px}
+#deeplink{margin:0 14px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}#deeplink h2{margin:0;font-size:14px}#deeplink small{color:var(--mut);font-weight:400}body.share #deeplink{display:none}
+/* Trade plan panel */
+.position-row{cursor:pointer}.position-row:hover{background:#161e30}.position-row .det{margin-top:8px}.position-row.open .det{display:block}
+.plan{cursor:default;background:#0e1420;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:12px;overflow-wrap:anywhere}
+.plan h4{margin:0 0 6px;font-size:13px}.plan h5{margin:8px 0 3px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.plan .pl{display:flex;flex-wrap:wrap;gap:2px 8px;padding:3px 0;border-top:1px solid var(--line)}.plan .pl:first-of-type{border-top:0}
+.plan .pl>span:first-child{width:62px;color:var(--mut);flex:none}.plan .pl b{font-weight:600}.plan .pl em{font-style:normal;color:var(--mut);flex:1 1 90px;min-width:0}
+.plan .na{color:var(--mut)}.plan .long{color:var(--g)}.plan .short{color:var(--r)}.plan .sl{color:var(--r)}.plan .tp{color:var(--g)}
+.plan .note{margin:8px 0 0;color:var(--mut);font-size:11px}
+#intro{margin:0 14px 10px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--mut)}#intro p{margin:0 0 6px}#intro b{color:var(--tx)}
+#gloss summary,#alerts-toggle{cursor:pointer;color:var(--b)}#gloss dt{color:var(--tx);font-weight:600;margin-top:6px}#gloss dd{margin:0}
+#alerts:not(.open) .alert-controls,#alerts:not(.open) #alert-help,#alerts:not(.open) #notify-status,#alerts:not(.open) #alert-log{display:none}
+#alerts:not(.open) .alert-head{border-bottom:0}
+body.share #intro,body.share #alerts,body.share #install{display:none!important}
+.tip{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:50%;background:var(--line);color:var(--mut);font-size:10px;cursor:help;margin-left:4px}
+button,select,summary{min-height:36px}select.act{background:var(--card);color:var(--tx)}
+</style></head><body>
+<header>
+<div style="display:contents" class="x"></div><h1><span class="brand"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#0b0f17"/><rect x=".75" y=".75" width="30.5" height="30.5" rx="7.5" fill="none" stroke="url(#lg)" stroke-width="1.5"/><path d="M5 18h5l3-8 5 14 3-9 2 3h4" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>SignalSutra</b></span><span class="tagline">Crypto structure scanner · top USDT pairs</span></h1>
+<div class="seg ctl" id="tf"><button data-v="15m">15m</button><button data-v="1h" class="on">1h</button></div>
+<label class="ctl">Min score <select id="min" class="act"><option>0</option><option>30</option><option selected>40</option><option>50</option><option>60</option></select></label>
+<label class="ctl"><input type="checkbox" id="auto" checked> auto 60s</label>
+<button class="act ctl" id="go">Refresh</button>
+<button class="act" id="install" hidden>Install app</button>
+<button class="act" id="shot">Share view</button>
+</header>
+<section id="intro"><p><b>What is this?</b> Shows candle-pattern zones and price levels where price previously reacted, plus current strength rankings for the top 30 Binance coins. <b>Green</b> = recent strength, <b>red</b> = recent weakness; the number is a heuristic momentum and structure score (0-100), not a probability.</p><p><b>How to use it:</b> tap any coin to open its mechanical plan: an entry zone, a stop level, and nearby price levels (Targets, Resistance above, Support below) taken from recent candles.</p>
+<p class="method-line">Zones come from closed candles only: fresh (untouched), retested (touched, still valid), or dropped once a candle closes through them.</p>
+<details id="gloss"><summary>What do these words mean?</summary><dl>
+<dt>OB (order block)</dt><dd>A candle-pattern zone inferred from the last opposite candle before a strong move. Price sometimes reacts when it returns, with no guarantee. Used here as the Entry zone.</dd>
+<dt>Liquidity</dt><dd>Price levels where the market reacted before (equal highs/lows, swing points). Price often revisits such levels, but there is no guarantee.</dd>
+<dt>Equal highs / lows</dt><dd>Two or more highs (or lows) at nearly the same price. Used here as a reference level.</dd>
+<dt>Sweep</dt><dd>Price briefly trades past a level and then closes back inside it.</dd>
+<dt>BOS</dt><dd>Break of structure: price closed beyond a recent high or low.</dd>
+<dt>Stop</dt><dd>A level beyond the entry zone where this pattern no longer holds.</dd>
+<dt>Resistance / Support</dt><dd>Reference levels above / below price where price previously reacted.</dd></dl></details>
+<details id="method"><summary>How it works, and what it can't see</summary><dl>
+<dt>Method</dt><dd>Uses Binance spot candles only (15m or 1h, last 200). Zones, swing points and equal highs/lows are inferred from open/high/low/close with fixed rules. Structure uses closed candles; the forming candle is used only for current price.</dd>
+<dt>Zone states</dt><dd>One rule everywhere, from closed candles only. Fresh: no closed candle has overlapped the zone since the move. Retested: a closed candle has, and the zone is still valid. Dropped: a candle closed beyond its far edge. The live candle never changes the state. If live price is already beyond the far edge, the board says "price through zone" and the Position Builder hides it until the candle closes.</dd><dt>Order block (OB)</dt><dd>The last opposite-colour candle before a strong candle (body over 1.3x ATR).</dd><dt>Levels</dt><dd>Swing highs/lows, plus equal highs/lows (clusters within 0.12%). Levels that price has since wicked through are not shown as unswept. A sweep needs a wick past the cluster extreme and a close back inside.</dd>
+<dt>BOS tag</dt><dd>Shown when the strong candle closed beyond the most recent swing point that had not already been broken.</dd>
+<dt>Cannot see</dt><dd>Order book, open interest, funding, futures, news, or who is trading. It does not know of any real orders. Levels are patterns in past prices only.</dd>
+<dt>Alerts</dt><dd>Watch signals only, checked on each refresh while the page is open.</dd></dl></details></section>
+<div id="status">Loading…</div>
+<div id="src">Source: Binance spot</div>
+<main>
+<section class="board bull"><h2>Bullish <small id="nb" title="Score = heuristic momentum score, not a probability"></small></h2><div class="list" id="bull"></div></section>
+<section class="board bear"><h2>Bearish <small id="nr"></small></h2><div class="list" id="bear"></div></section>
+</main>
+<section id="positions" aria-labelledby="position-heading">
+<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins where price is inside a valid order-block zone (one not yet closed through) or within 1% of its near edge. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Informational only, not a recommendation.</p></div>
+<div class="position-grid">
+<section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="empty">Waiting for market data.</div></div></section>
+<section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="empty">Waiting for market data.</div></div></section>
+</div></section>
+<section id="alerts" aria-labelledby="alert-heading">
+<div class="alert-head"><h2 id="alert-heading">Alerts <small id="alert-count" style="color:var(--mut);font-weight:400">0 recent</small></h2><button class="act" id="alerts-toggle" aria-expanded="false">Show settings</button><button class="act" id="notify">Enable browser alerts</button><button class="act" id="clear-alerts">Clear log</button></div>
+<div class="alert-controls">
+<label><input id="alert-position" type="checkbox" checked> Position zone crossing</label>
+<label><input id="alert-zone" type="checkbox" checked> OB zone entry</label>
+<label><input id="alert-sweep" type="checkbox" checked> Liquidity sweep</label>
+<label><input id="alert-volume" type="checkbox" checked> Volume spike (&gt;2.5×)</label>
+<label><input id="alert-move" type="checkbox" checked> Large move (&gt;2× range)</label>
+<label><input id="alert-sound" type="checkbox"> Sound</label>
+<label><input id="alert-browser" type="checkbox"> Browser alerts when hidden</label>
+</div>
+<p id="alert-help">Checks all 30 scanned pairs each refresh, independent of score filter. OB entries use current price; sweeps and activity use the latest closed candle and 20 prior candles. Position crossings require an observed outside-to-inside transition; the OB zone alert also needs an observed outside-to-inside move (a zone first seen with price already inside is not alerted). Polling may miss between-refresh crossings. Watch signals only.</p>
+<p id="notify-status" role="status"></p>
+<ul id="alert-log" aria-label="Recent alerts"></ul>
+</section>
+<div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+<footer>Educational tool only, not financial advice. Data: Binance public market data; may be delayed or unavailable. Trade at your own risk. Not affiliated with or endorsed by Binance.</footer>
+<script>
+const HOSTS=["https://data-api.binance.vision","https://api.binance.com","https://api1.binance.com"];
+let isSilent=false,baselined=new Set(),usedHost=null,stat=null,deep=null,host=null,tf="1h",timer=null,busy=false,results=[],open={},dataTF="1h",updatedAt=null;
+const STABLE=/^(USDC|FDUSD|TUSD|USDP|DAI|BUSD|USDE|EUR|EURI|AEUR|XUSD|USD1|PAXG|XAUT|WBTC|WBETH|BFUSD|UST|RLUSD|USDG|USDS|PYUSD|USDD|FRAX|GUSD|LUSD|SUSD|USDT0)/;
+const pegged=t=>{const l=+t.lastPrice,h=+t.highPrice,lo=+t.lowPrice;return l>0.97&&l<1.03&&(h-lo)/l<0.01}; // stablecoin-like: near $1 with under 1% daily range
+const $=id=>document.getElementById(id);
+async function api(path){
+  const list=host?[host]:HOSTS;let err;
+  for(const h of list){const ac=new AbortController(),to=setTimeout(()=>ac.abort(),12000);try{const r=await fetch(h+path,{signal:ac.signal});if(!r.ok)throw new Error(h+" "+r.status);const j=await r.json();clearTimeout(to);host=h;return j}catch(e){clearTimeout(to);err=e}}
+  host=null;throw err;
+}
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+function fmt(p){return p>=1000?Math.round(p).toLocaleString("en-US"):p>=100?p.toFixed(1):p>=10?p.toFixed(2):p>=1?p.toFixed(3):p>=0.1?p.toFixed(4):p.toPrecision(4)}
+function atr(c,n=14){const out=[];let s=0;for(let i=0;i<c.length;i++){const tr=i?Math.max(c[i].h-c[i].l,Math.abs(c[i].h-c[i-1].c),Math.abs(c[i].l-c[i-1].c)):c[i].h-c[i].l;s=i<n?(s*i+tr)/(i+1):(s*(n-1)+tr)/n;out.push(s)}return out}
+function swings(c,k=3){const hi=[],lo=[];for(let i=k;i<c.length-k;i++){let H=true,L=true;for(let j=1;j<=k;j++){if(c[i].h<=c[i-j].h||c[i].h<=c[i+j].h)H=false;if(c[i].l>=c[i-j].l||c[i].l>=c[i+j].l)L=false}if(H)hi.push({i,p:c[i].h});if(L)lo.push({i,p:c[i].l})}return{hi,lo}}
+// cluster equal levels within tolerance
+function equal(pts,tol){ // deterministic: sort by price, group anchored on the lowest member
+  const o=[...pts].sort((a,b)=>a.p-b.p),out=[];let g=[];
+  const flush=()=>{if(g.length>=2)out.push({p:g.reduce((t,x)=>t+x.p,0)/g.length,n:g.length,i:Math.max(...g.map(x=>x.i)),max:Math.max(...g.map(x=>x.p)),min:Math.min(...g.map(x=>x.p))});g=[]};
+  for(const x of o){if(g.length&&(x.p-g[0].p)/g[0].p>tol)flush();g.push(x)}flush();return out}
+// ZONE STATE (one rule for boards and Position Builder). Built from CLOSED candles only:
+//  fresh = no closed candle has overlapped the zone since the move; retested = one has, zone still valid;
+//  invalidated = a closed candle closed beyond the far edge (zone dropped). The live candle never changes state.
+function findOB(c,A,dir){
+  const n=c.length,sw=swings(c),zones=[];
+  for(let d=n-1;d>=Math.max(20,n-60);d--){
+    const k=c[d],body=(k.c-k.o)*dir;
+    if(body<1.3*A[d-1]||body/(k.h-k.l||1)<0.55)continue;
+    // BOS: close beyond the most recent prior swing that had not already been broken
+    const prior=(dir>0?sw.hi:sw.lo).filter(x=>x.i<d-1&&x.i>d-40&&!c.slice(x.i+1,d).some(m=>dir>0?m.c>x.p:m.c<x.p));
+    const ref=prior[prior.length-1],bos=!!ref&&(dir>0?k.c>ref.p:k.c<ref.p);
+    let ob=-1;for(let j=d-1;j>=Math.max(0,d-6);j--){if((c[j].c-c[j].o)*dir<0){ob=j;break}}
+    if(ob<0)continue;
+    const top=c[ob].h,bot=c[ob].l;
+    let invalidated=false,tapped=false;
+    for(let m=d+1;m<n;m++){if(dir>0?c[m].c<bot:c[m].c>top){invalidated=true;break}if(c[m].l<=top&&c[m].h>=bot)tapped=true}
+    if(invalidated)continue;
+    zones.push({top,bot,idx:ob,disp:d,bos,tapped,time:c[ob].t,formationTime:c[d].t,age:n-d});
+  }
+  return zones;
+}
+// Side-aware proximity to the LIVE price. inside: dist 0. through: price already beyond the far edge (dist null).
+function zoneProx(price,o,side){
+  if(price>=o.bot&&price<=o.top)return{inside:true,through:false,dist:0};
+  if(side==="bull"?price<o.bot:price>o.top)return{inside:false,through:true,dist:null};
+  return{inside:false,through:false,dist:(side==="bull"?price-o.top:o.bot-price)/price*100};
+}
+function analyse(sym,t,c){
+  c=c.slice(0,-1).concat(c.slice(-1)); // keep live candle for price; analysis uses closed ones
+  const live=c[c.length-1],cl=c.slice(0,-1),n=cl.length,A=atr(cl),a=A[n-1],last=live.c;
+  const N=12,net=(cl[n-1].c-cl[n-1-N].c);
+  let rng=0;for(let i=n-N;i<n;i++)rng+=cl[i].h-cl[i].l;
+  const eff=Math.abs(net)/(rng||1);
+  const sw=swings(cl),tol=0.0012;
+  const eqH=equal(sw.hi.slice(-12),tol),eqL=equal(sw.lo.slice(-12),tol);
+  const res={sym,price:last,chg:t?+t.priceChangePercent:0,eff,c:c.slice(-60),cOff:Math.max(0,c.length-60),atr:a};
+  for(const dir of[1,-1]){
+    const s=net*dir/a;let disp=0;
+    for(let i=n-10;i<n;i++)disp=Math.max(disp,(cl[i].c-cl[i].o)*dir/A[i-1]);
+    const side0=dir>0?"bull":"bear",zs=findOB(cl,A,dir);zs.forEach(z=>Object.assign(z,zoneProx(last,z,side0)));const ob=zs[0]||null;
+    const sweptL=(isHigh,x)=>{const e=isHigh?(x.max??x.p):(x.min??x.p);return c.slice(x.i+1).some(k=>isHigh?k.h>e:k.l<e)};
+    // liquidity: targets ahead (bull -> buy-side highs above, bear -> sell-side lows below); pools behind (swept side)
+    const pool=(dir>0?[...eqH.map(x=>({...x,eq:1})),...sw.hi.map(x=>({...x,n:1}))].filter(x=>x.p>last&&!sweptL(true,x)):[...eqL.map(x=>({...x,eq:1})),...sw.lo.map(x=>({...x,n:1}))].filter(x=>x.p<last&&!sweptL(false,x)))
+      .sort((x,y)=>Math.abs(x.p-last)-Math.abs(y.p-last))[0]||null;
+    let sc=38*clamp(s/6)+22*clamp(disp/3)+20*clamp(eff/0.5)+(ob?12:0)+(ob&&ob.bos?5:0)+(ob&&!ob.through&&ob.dist<3?3:0);
+    if(s<=0)sc*=0.3; if(eff<0.18)sc*=0.6;
+    res[side0]={score:Math.round(clamp(sc/100)*100),ob,pool,move:s,disp,zones:zs};
+  }
+  res.positionOB={bull:res.bull.zones,bear:res.bear.zones};
+  res.closed=cl.slice(-21);res.liveTime=live.t;
+  const before=swings(cl.slice(0,-1));
+  res.sweepHigh=[...equal(before.hi.slice(-12),tol).map(x=>({...x,eq:1})),...before.hi.slice(-4)].map(x=>({...x,e:x.max??x.p,time:cl[x.i].t}));
+  res.sweepLow=[...equal(before.lo.slice(-12),tol).map(x=>({...x,eq:1})),...before.lo.slice(-4)].map(x=>({...x,e:x.min??x.p,time:cl[x.i].t}));
+  for(const side of ["bull","bear"])if(res[side].ob)res[side].ob.time=cl[res[side].ob.idx].t;
+  const swp=(isHigh,x)=>{const e=isHigh?(x.max??x.p):(x.min??x.p);return c.slice(x.i+1).some(k=>isHigh?k.h>e:k.l<e)};
+  res.lv={hi:sw.hi.map(x=>({p:x.p,t:cl[x.i].t,sw:swp(true,x)})),lo:sw.lo.map(x=>({p:x.p,t:cl[x.i].t,sw:swp(false,x)}))};res.eqH=eqH.map(x=>({...x,sw:swp(true,x)}));res.eqL=eqL.map(x=>({...x,sw:swp(false,x)}));res.swH=sw.hi.slice(-4);res.swL=sw.lo.slice(-4);
+  return res;
+}
+function spark(r,side){
+  const c=r.c,W=300,H=170,pad=4,o=r[side].ob,pool=r[side].pool;
+  let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
+  [o&&o.top,o&&o.bot,pool&&pool.p].forEach(v=>{if(v){lo=Math.min(lo,v);hi=Math.max(hi,v)}});
+  const y=v=>pad+(hi-v)/(hi-lo||1)*(H-2*pad),w=W/c.length;let s="";
+  if(o){const x0=Math.max(0,Math.min(c.length-1,o.idx-(r.cOff||0)))*(W/c.length);s+=`<rect x="${x0}" y="${y(o.top)}" width="${W-x0}" height="${Math.max(2,y(o.bot)-y(o.top))}" fill="${side=="bull"?"#22c55e":"#ef4444"}" opacity=".22"/>`}
+  if(pool)s+=`<line x1="0" x2="${W}" y1="${y(pool.p)}" y2="${y(pool.p)}" stroke="#60a5fa" stroke-dasharray="4 3"/><text x="4" y="${y(pool.p)-3}" fill="#60a5fa" font-size="10">${pool.eq?"equal "+(side=="bull"?"highs":"lows")+" ×"+pool.n:"swing "+(side=="bull"?"high":"low")}</text>`;
+  c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*w+w/2;s+=`<line x1="${x}" x2="${x}" y1="${y(k.h)}" y2="${y(k.l)}" stroke="${col}"/><rect x="${x-w*.32}" y="${y(Math.max(k.o,k.c))}" width="${w*.64}" height="${Math.max(1,Math.abs(y(k.o)-y(k.c)))}" fill="${col}"/>`});
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg>`;
+}
+
+// Trade plan: mechanical, built only from levels the engine already found. Missing parts stay "n/a".
+function planLevels(r){
+  const L=[];const add=(p,label,eq,skip)=>{if(!skip&&Number.isFinite(p))L.push({p,label,eq:!!eq,k:/high/.test(label)?"hi":/low/.test(label)?"lo":""})};
+  for(const x of r.lv.hi)add(x.p,"swing high",0,x.sw&&x.p>r.price);for(const x of r.lv.lo)add(x.p,"swing low",0,x.sw&&x.p<r.price);
+  for(const x of r.eqH)add(x.p,"equal highs ×"+x.n,1,x.sw&&x.p>r.price);for(const x of r.eqL)add(x.p,"equal lows ×"+x.n,1,x.sw&&x.p<r.price);
+  return L;
+}
+function planZoneLevels(r,zone){
+  const out=[];for(const side of["bull","bear"])for(const o of r.positionOB[side]){
+    if(zone&&o.idx===zone.idx)continue;
+    const nm=side==="bull"?"bullish OB":"bearish OB";
+    out.push({p:o.bot,label:nm+" low edge"});out.push({p:o.top,label:nm+" high edge"});}
+  return out;
+}
+function dedupe(list){ // merge levels within 0.1%; prefer equal-level labels
+  const out=[];for(const x of list.sort((a,b)=>a.p-b.p)){const m=out.find(y=>Math.abs(y.p-x.p)/y.p<=0.001);if(!m)out.push({...x});else if(x.eq&&!m.eq){m.p=x.p;m.label=x.label;m.eq=1;m.k=x.k}}return out}
+function roleLabel(x,price){ // a broken high/low flips role; say so instead of mislabeling
+  if(!x)return x;const up=x.p>price;if(x.label.includes("OB"))return x;
+  if(up&&x.k==="lo")return {...x,label:x.label.replace("swing low","old swing low (broken, now resistance)").replace("equal lows","old equal lows (now resistance)")};
+  if(!up&&x.k==="hi")return {...x,label:x.label.replace("swing high","old swing high (broken, now support)").replace("equal highs","old equal highs (now support)")};
+  return x}
+function planPct(p,price){const d=(p-price)/price*100;const a=Math.abs(d);if(a<0.05)return "0%";return (d>=0?"+":"-")+a.toFixed(a<10?1:0)+"%"}
+function planLine(tag,x,price,cls){return x?`<div class="pl"><span>${tag}</span><b class="${cls||""}">${fmt(x.p)}</b><span style="width:auto;color:var(--mut)">${planPct(x.p,price)}</span><em>${x.label}</em></div>`:`<div class="pl"><span>${tag}</span><b class="na">n/a</b><em>not found in current structure</em></div>`}
+function tradePlan(r,side,zone){
+  const price=r.price,long=side==="bull";
+  if(!zone){const zs=(r.positionOB[side]||[]).map(o=>({o,d:long?Math.abs(price-o.top):Math.abs(o.bot-price)})).sort((a,b)=>a.d-b.d);if(zs.length)zone=zs[0].o}
+  const lv=planLevels(r),zl=planZoneLevels(r,zone),all=dedupe([...lv,...zl]);
+  const above=all.filter(x=>x.p>price).sort((a,b)=>a.p-b.p),below=all.filter(x=>x.p<price).sort((a,b)=>b.p-a.p);
+  let entry=`<div class="pl"><span>Entry</span><b class="na">n/a</b><em>no valid (not invalidated) OB on this side</em></div>`,sl=`<div class="pl"><span>Stop</span><b class="na">n/a</b><em>needs an entry zone</em></div>`,tps=[null,null,null],rr="n/a";
+  if(zone){
+    const mid=(zone.top+zone.bot)/2,buf=Math.max(0.003*price,0.5*(r.atr||0)),slp=long?zone.bot-buf:zone.top+buf;
+    entry=`<div class="pl"><span>Entry</span><b>${fmt(zone.bot)} – ${fmt(zone.top)}</b><em>mid ${fmt(mid)} · price ${fmt(price)} ${zone.inside?"(in zone)":"("+planPct(mid,price)+" to mid)"}</em></div>`;
+    sl=`<div class="pl"><span>Stop</span><b class="sl">${fmt(slp)}</b><em>beyond ${long?"low":"high"} edge by ${fmt(buf)} (small buffer)</em></div>`;
+    const base=long?Math.max(price,zone.top):Math.min(price,zone.bot);
+    const t=long?all.filter(x=>x.p>base).sort((a,b)=>a.p-b.p):all.filter(x=>x.p<base).sort((a,b)=>b.p-a.p);
+    tps=[t[0]||null,t[1]||null,t[2]||null].map(x=>roleLabel(x,price));
+    const risk=Math.abs(mid-slp);
+    const f=x=>x&&risk>0&&(long?x.p>mid:x.p<mid)?(()=>{const v=Math.abs(x.p-mid)/risk;return v>10?"10R+":v.toFixed(1)+"R"})():"n/a";
+    rr=`Target 1 ${f(tps[0])} · Target 2 ${f(tps[1])}`;
+  }
+  const nm=long?"Long":"Short";
+  return `<div class="plan"><h4><span class="${long?"long":"short"}">Candidate ${nm.toLowerCase()} zone</span> · ${r.sym} · ${fmt(price)}</h4><p class="note" style="margin:0 0 6px">Illustrative levels from past prices. Not predictions.</p>${entry}${sl}
+<h5>Targets</h5>${planLine("Target 1",tps[0],price,"tp")}${planLine("Target 2",tps[1],price,"tp")}${planLine("Target 3",tps[2],price,"tp")}
+<h5>Reward vs risk (from middle of zone, capped at 10R+)</h5><div class="pl"><b>${rr}</b></div>
+<h5>Resistance above</h5>${planLine("Resist. 1",roleLabel(above[0],price),price)}${planLine("Resist. 2",roleLabel(above[1],price),price)}${planLine("Resist. 3",roleLabel(above[2],price),price)}
+<h5>Support below</h5>${planLine("Support 1",roleLabel(below[0],price),price)}${planLine("Support 2",roleLabel(below[1],price),price)}${planLine("Support 3",roleLabel(below[2],price),price)}
+<button class="act plan-link" data-sym="${r.sym}" data-side="${side}">Copy link to this plan</button>
+<p class="note">Mechanical from current structure, not advice. Educational tool only.</p></div>`;
+}
+function rowHTML(r,side){
+  const d=r[side],o=d.ob,min=+$("min").value;
+  const obTxt=o?`<span><span title="Order block: candle-pattern zone before a strong move (inferred)">Entry zone</span> <b>${fmt(o.bot)} – ${fmt(o.top)}</b> ${o.inside?'<span class="tag in">in zone</span>':o.through?'<span class="tag" title="Live price is beyond the far edge. The zone is dropped if the candle closes there.">price through zone</span>':`(${o.dist.toFixed(o.dist<10?1:0)}% away)`}${o.bos?' <span class="tag" title="Break of structure: the move closed beyond the most recent unbroken swing">BOS</span>':""}${o.tapped&&!o.inside?' <span class="tag" title="A closed candle traded back into the zone after the move. The zone is still valid.">retested</span>':""}</span>`:`<span>No valid zone</span>`;
+  const p=d.pool,pd=p?Math.abs(p.p-r.price)/r.price*100:0;
+  const lq=p?`<span>${side=="bull"?"Resistance (reference level) above":"Support (reference level) below"} <b>${fmt(p.p)}</b> (${pd.toFixed(pd<10?1:0)}%)${p.eq?" · equal ×"+p.n:" · swing"}</span>`:`<span>No nearby pool</span>`;
+  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}</div><div class="det">${spark(r,side)}${tradePlan(r,side,o)}</div></div>`;
+}
+// Distance is 0 inside, otherwise the percent gap from price to the near edge.
+function positionDistance(price,o,side){
+  if(!Number.isFinite(price)||price<=0||!o||o.bot>o.top)return null;
+  const p=zoneProx(price,o,side);if(p.through)return null;
+  return {inside:p.inside,distance:p.dist};
+}
+function positionCandidates(r,side){return (r.positionOB?.[side]||[]).map(o=>({r,o,...positionDistance(r.price,o,side)})).filter(x=>x.distance!==undefined&&x.distance<=1)}
+function positionRows(side){
+  // One nearest zone per coin and direction; prefer the newest on an equal distance.
+  return results.map(r=>positionCandidates(r,side).sort((a,b)=>a.distance-b.distance||b.o.formationTime-a.o.formationTime)[0]).filter(Boolean).sort((a,b)=>a.distance-b.distance||a.o.age-b.o.age||a.r.sym.localeCompare(b.r.sym));
+}
+function renderPositions(){
+  const share=document.body.classList.contains("share");
+  $("position-heading").firstChild.textContent=share?"Position zones ":"Position Builder ";$("position-tf").textContent=dataTF;
+  for(const [side,name] of [["bull","long"],["bear","short"]]){
+    const all=positionRows(side),rows=share?all.slice(0,5):all;
+    $("position-"+name+"-count").textContent=share?`${rows.length} of ${all.length}`:`${all.length} coins`;
+    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span>Edge gap <b>${distance.toFixed(2)}%</b></span><span>Age <b>${o.age} candles</b></span></div><div class="det">${tradePlan(r,side,o)}</div></div>`).join(""):'<div class="empty">No coins in zone right now or within 1%.</div>';
+  }
+}
+function hostLabel(h){return h?"Binance spot via "+h.replace("https://",""):"unknown host"}
+function renderStatus(){if(!stat||!updatedAt)return;const age=Math.max(0,Math.round((Date.now()-updatedAt)/1000)),ageTxt=age<90?age+"s ago":Math.round(age/60)+" min ago";
+  const tfms=dataTF==="15m"?900000:3600000,stale=Date.now()-stat.candle>1.5*tfms;
+  $("status").textContent=`${stat.loaded} of ${stat.total} pairs loaded · ${dataTF} · ${hostLabel(usedHost)} · updated ${ageTxt} · latest candle ${new Date(stat.candle).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${stale?" (market data looks stale)":""}`}
+setInterval(renderStatus,5000);
+function renderSource(){if(updatedAt)$("src").textContent=`Source: ${hostLabel(usedHost)} · ${dataTF} · ${updatedAt.toLocaleString()}`}
+function render(){
+  renderPositions();renderSource();
+  const min=+$("min").value;
+  for(const side of["bull","bear"]){
+    let all=results.filter(r=>r[side].score>=min&&r[side].move>0).sort((a,b)=>b[side].score-a[side].score);if(document.body.classList.contains("share"))all=all.slice(0,8);
+    const hidden=results.length-all.length;
+    $(side).innerHTML=all.length?all.map(r=>rowHTML(r,side)).join(""):'<div class="empty">Nothing above the score filter.</div>';
+    $(side=="bull"?"nb":"nr").textContent=`${all.length} shown · ${hidden} filtered`;
+  }
+}
+// Device-local alert preferences, history and event IDs. No account or keys.
+const ALERT_KEY="ob-scanner-alerts-v1";
+let alertLog=[],seen=new Set(),zoneState=new Map(),positionState=new Map(),audio=null,alertBatch=[];
+const alertOptions=["position","zone","sweep","volume","move","sound","browser"];
+function saveAlerts(){try{localStorage.setItem(ALERT_KEY,JSON.stringify({log:alertLog,seen:[...seen].slice(-2000),options:Object.fromEntries(alertOptions.map(k=>[k,$("alert-"+k).checked]))}))}catch(e){$("notify-status").textContent="Browser storage unavailable: alert history and dedupe last only for this open tab."}}
+function loadAlerts(){try{const a=JSON.parse(localStorage.getItem(ALERT_KEY)||"null");if(a){alertLog=Array.isArray(a.log)?a.log.filter(x=>x&&typeof x==="object"&&Number.isFinite(x.at)&&typeof x.coin==="string"&&(x.bias==="bull"||x.bias==="bear")).slice(0,100):[];seen=new Set(Array.isArray(a.seen)?a.seen.slice(-2000):[]);for(const k of alertOptions)if(typeof a.options?.[k]==="boolean")$("alert-"+k).checked=a.options[k]}}catch(e){}}
+function renderAlerts(){
+  $("alert-count").textContent=alertLog.length+" recent";
+  const log=$("alert-log");log.replaceChildren();
+  if(!alertLog.length){const li=document.createElement("li");li.className="empty";li.textContent="No alerts yet. Waiting for a matching refresh.";log.append(li);return}
+  for(const a of alertLog){const li=document.createElement("li");li.className="alert-item";
+    const title=document.createElement("div");title.className="alert-title";
+    const b=document.createElement("b");b.textContent=a.coin+" · "+a.tf+" · "+a.title;
+    const time=document.createElement("time");time.className="alert-time";time.dateTime=new Date(a.at).toISOString();time.textContent=new Date(a.at).toLocaleString();
+    title.append(b,time);const d=document.createElement("div");d.className="alert-detail";d.textContent=a.detail+" · ";
+    const watch=document.createElement("span");watch.className="watch-"+a.bias;watch.textContent=a.bias==="bull"?"Bullish watch":"Bearish watch";d.append(watch);li.append(title,d);log.append(li);
+  }
+}
+function toastAlert(a){const box=document.createElement("div");box.className="toast";const close=document.createElement("button");close.textContent="×";close.setAttribute("aria-label","Dismiss alert");close.onclick=()=>box.remove();const b=document.createElement("b");b.textContent=a.coin+" · "+a.tf+" · "+a.title;const p=document.createElement("p");p.textContent=a.detail+" · "+(a.bias==="bull"?"Bullish watch":"Bearish watch");box.append(close,b,p);$("toasts").prepend(box);while($("toasts").children.length>3)$("toasts").lastChild.remove();setTimeout(()=>box.remove(),12000)}
+function emitAlert(r,frame,trigger,candleTime,title,detail,bias){
+  const id=[r.sym,frame,trigger,candleTime].join("|");if(seen.has(id))return;
+  seen.add(id);if(seen.size>2000)seen.delete(seen.values().next().value);if(isSilent)return; // first scan per timeframe = silent baseline
+  const a={id,coin:r.sym,tf:frame,title,detail,bias,at:Date.now(),candleTime};alertLog.unshift(a);alertLog=alertLog.slice(0,100);alertBatch.push(a);
+}
+function checkPositionAlerts(r,frame){
+  for(const side of ["bull","bear"])for(const o of r.positionOB?.[side]||[]){
+    const key=[r.sym,frame,side,o.time,o.formationTime].join("|");
+    const state=positionDistance(r.price,o,side),inside=state?.inside===true;
+    const was=positionState.get(key);
+    // No startup alert: a sampled crossing is required. Dedupe once per side/live candle.
+    if($("alert-position").checked&&inside&&was===false)emitAlert(r,frame,"position-"+side,r.liveTime,"Position zone crossing",`Potential ${side==="bull"?"long":"short"}: price ${fmt(r.price)} entered ${fmt(o.bot)} – ${fmt(o.top)} · ${o.tapped?"retested":"fresh"} · ${o.age} candles`,side);
+    positionState.set(key,inside);
+  }
+}
+function checkAlerts(r,frame){
+  checkPositionAlerts(r,frame);
+  for(const side of ["bull","bear"]){const ob=r[side].ob;if(!ob)continue;
+    const key=[r.sym,frame,side,ob.time].join("|");const inside=r.price>=ob.bot&&r.price<=ob.top;const was=zoneState.get(key);
+    // Alert only on an observed outside -> inside transition. A zone first seen with price already inside is recorded silently.
+    if($("alert-zone").checked&&inside&&was===false)emitAlert(r,frame,"zone-"+side,r.liveTime,"OB zone entry",`Price ${fmt(r.price)} within ${fmt(ob.bot)} – ${fmt(ob.top)}`,side);
+    zoneState.set(key,inside);
+  }
+  const c=r.closed,latest=c[c.length-1],prev=c[c.length-2];if(!latest||!prev)return;
+  if($("alert-sweep").checked){
+    for(const [levels,isHigh] of [[r.sweepHigh,true],[r.sweepLow,false]]){
+      const swept=levels.filter(x=>x.time<latest.t&&(isHigh?prev.c<=x.e&&latest.h>x.e&&latest.c<x.e:prev.c>=x.e&&latest.l<x.e&&latest.c>x.e));
+      // One alert per side/candle, even where an equal pool overlaps a swing.
+      if(swept.length){const level=swept.find(x=>x.eq)||swept[0];const name=(level.eq?"Equal ":"Swing ")+(isHigh?"high":"low")+(level.eq?" ×"+level.n:"");emitAlert(r,frame,isHigh?"sweep-high":"sweep-low",latest.t,"Liquidity sweep",`${name} ${fmt(level.p)}: wick ${fmt(isHigh?latest.h:latest.l)}, close back ${fmt(latest.c)}`,isHigh?"bear":"bull")}
+    }
+  }
+  const prior=c.slice(-21,-1);if(prior.length<20)return;
+  const avgV=prior.reduce((s,k)=>s+k.v,0)/20,avgR=prior.reduce((s,k)=>s+k.h-k.l,0)/20;
+  const bias=latest.c>=latest.o?"bull":"bear",range=latest.h-latest.l;
+  if($("alert-volume").checked&&avgV>0&&latest.v>2.5*avgV)emitAlert(r,frame,"volume",latest.t,"Volume spike",`${(latest.v/avgV).toFixed(1)}× prior 20-candle volume average · candle ${fmt(latest.l)} – ${fmt(latest.h)}`,bias);
+  if($("alert-move").checked&&avgR>0&&range>2*avgR)emitAlert(r,frame,"move",latest.t,"Large candle move",`${(range/avgR).toFixed(1)}× prior 20-candle high-low range · candle ${fmt(latest.l)} – ${fmt(latest.h)}`,bias);
+}
+function soundAlert(){if(!$("alert-sound").checked||!audio||audio.state!=="running")return;try{const o=audio.createOscillator(),g=audio.createGain();o.type="sine";o.frequency.value=660;g.gain.setValueAtTime(0.08,audio.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audio.currentTime+0.25);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+0.25)}catch(e){}}
+function flushAlerts(){if(!alertBatch.length)return;renderAlerts();saveAlerts();alertBatch.slice(-3).forEach(toastAlert);soundAlert();
+  if($("alert-browser").checked&&document.visibilityState==="hidden"&&"Notification" in window&&Notification.permission==="granted"){
+    const a=alertBatch[0],extra=alertBatch.length-1;
+    try{const n=new Notification(a.coin+" · "+a.tf+" · "+a.title+(extra?` (+${extra} more)`:""),{body:a.detail+" · "+(a.bias==="bull"?"Bullish watch":"Bearish watch"),tag:"ob-scanner-alert-batch"});n.onclick=()=>{window.focus();n.close()}}catch(e){$("notify-status").textContent="Browser could not show a notification. In-app alerts remain active."}
+  }
+  alertBatch=[];
+}
+function notificationStatus(){const available="Notification" in window&&window.isSecureContext;
+  $("notify").disabled=!available||Notification.permission==="granted";
+  $("notify").textContent=available&&Notification.permission==="granted"?"Browser permission granted":"Enable browser alerts";
+  $("notify-status").textContent=!available?"Browser alerts need Notification API support and a secure context (HTTPS or localhost). In-app alerts still work.":Notification.permission==="denied"?"Browser alerts blocked. Change this site's browser permission to allow them.":"Browser alerts are optional and only appear while this tab is hidden. Keep the app open; background timers may be delayed.";
+}
+loadAlerts();renderAlerts();notificationStatus();
+for(const k of alertOptions)$("alert-"+k).onchange=async()=>{if(k==="sound"&&$("alert-sound").checked){try{audio ||= new (window.AudioContext||window.webkitAudioContext)();await audio.resume()}catch(e){$("notify-status").textContent="Sound is unavailable in this browser."}}saveAlerts()};
+// A saved sound setting still needs a fresh user gesture after reopening.
+document.addEventListener("pointerdown",()=>{if($("alert-sound").checked){try{audio ||= new (window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{})}catch(e){}}});
+$("notify").onclick=async()=>{try{const p=await Notification.requestPermission();if(p==="granted")$("alert-browser").checked=true;notificationStatus();saveAlerts()}catch(e){$("notify-status").textContent="Permission request failed. In-app alerts still work."}};
+$("clear-alerts").onclick=()=>{alertLog=[];seen.clear();renderAlerts();saveAlerts()};
+async function scan(){
+  if(busy)return;clearTimeout(timer);const scanTF=tf;busy=true;stat=null;$("status").textContent="Scanning…";
+  try{
+    const tk=await api("/api/v3/ticker/24hr");
+    const have=new Set(tk.map(x=>x.symbol));
+    const top=tk.filter(x=>x.symbol.endsWith("USDT")&&!STABLE.test(x.symbol)&&!pegged(x)&&!(m=>m&&have.has(m[1]+"USDT"))(x.symbol.match(/^(.+?)(?:UP|DOWN|BULL|BEAR)USDT$/))).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,30);
+    const out=[];let i=0,failed=0;
+    await Promise.all(Array.from({length:6},async()=>{while(i<top.length){const t=top[i++];try{const k=await api(`/api/v3/klines?symbol=${t.symbol}&interval=${scanTF}&limit=200`);
+      const c=k.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5],ct:+x[6]}));out.push(analyse(t.symbol.replace("USDT",""),t,c))}catch(e){failed++}}}));
+    if(!out.length)throw new Error("no data");
+    if(scanTF===tf){
+    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();applyDeep();
+    try{isSilent=!baselined.has(scanTF);for(const r of out)checkAlerts(r,scanTF);if(isSilent)alertBatch=[];else flushAlerts();baselined.add(scanTF)}catch(e){console.error("alerts",e)}finally{isSilent=false}
+    if(zoneState.size>5000)zoneState.clear();
+    if(positionState.size>5000)positionState.clear();
+    stat={loaded:out.length,total:top.length,candle:Math.max(...out.map(r=>r.liveTime))};renderStatus();
+    }
+  }catch(e){$("status").textContent="Data unavailable: "+e.message+". Binance API may be blocked on this network (try another network or VPN off).";}
+  busy=false;if(scanTF!==tf)scan();else sched();
+}
+function sched(){clearTimeout(timer);if($("auto").checked)timer=setTimeout(scan,60000)}
+document.querySelectorAll("#tf button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tf button").forEach(x=>x.classList.remove("on"));b.classList.add("on");tf=b.dataset.v;scan()});
+$("go").onclick=scan;$("shot").onclick=()=>{const on=document.body.classList.toggle("share");$("shot").textContent=on?"Exit share view":"Share view";renderSource();render()};$("auto").onchange=sched;$("min").onchange=render;
+$("alerts-toggle").onclick=()=>{const o=$("alerts").classList.toggle("open");$("alerts-toggle").textContent=o?"Hide settings":"Show settings";$("alerts-toggle").setAttribute("aria-expanded",o)};
+function toggleRow(r){r.classList.toggle("open");const o=r.classList.contains("open");open[r.dataset.k]=o;r.setAttribute("aria-expanded",o)}
+document.addEventListener("click",e=>{const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{pl.textContent="Link copied"},()=>{window.prompt("Copy this link:",url)});return}
+  if(e.target.closest(".plan"))return;const r=e.target.closest(".row,.position-row");if(r)toggleRow(r)});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".row,.position-row")){e.preventDefault();toggleRow(e.target)}});
+(function(){const q=new URLSearchParams(location.search),sym=(q.get("sym")||"").toUpperCase(),t=q.get("tf"),sd=q.get("side");
+  if(/^[A-Z0-9]{1,12}$/.test(sym)){deep={sym,side:sd==="bull"||sd==="bear"?sd:null};if(t==="15m"||t==="1h"){tf=t;document.querySelectorAll("#tf button").forEach(b=>b.classList.toggle("on",b.dataset.v===t))}}})();
+function applyDeep(){if(!deep)return;const d=deep;deep=null;const r=results.find(x=>x.sym===d.sym);if(!r)return;
+  const side=d.side||(r.bull.score>=r.bear.score?"bull":"bear");open[side+r.sym]=true;open["pos"+side+r.sym]=true;
+  if(!(r[side].score>=+$("min").value&&r[side].move>0))$("min").value="0";render();
+  const el=document.querySelector(`.row[data-k="${side+r.sym}"]`);
+  if(el){el.scrollIntoView({block:"center"});return}
+  // Not on the board (score filter or no momentum on that side): show the linked plan on its own.
+  const box=document.createElement("section");box.id="deeplink";box.innerHTML=`<h2>${r.sym} · ${d.side?side==="bull"?"long":"short":"linked"} view <small>shared link</small></h2>`+tradePlan(r,side,r[side].ob);
+  $("status").after(box);box.scrollIntoView({block:"start"});}
+scan();
+// PWA: installable app shell. The service worker only caches this site's own files; Binance requests always go to the network.
+let installEvt=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;$("install").hidden=false});
+$("install").onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$("install").hidden=true};
+window.addEventListener("appinstalled",()=>{$("install").hidden=true});
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script></body></html>
