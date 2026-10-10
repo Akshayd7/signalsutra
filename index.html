@@ -57,7 +57,7 @@ svg{width:100%;height:170px;display:block;background:#0e1420;border-radius:6px}
 #fs .fl .pl{display:flex;gap:8px;padding:3px 0;align-items:baseline}#fs .fl .pl>span:first-child{width:64px;color:var(--mut);flex:none}#fs .fl .pl b{font-weight:600}#fs .fl .pl em{font-style:normal;color:var(--mut)}
 #fs .ff{flex:none;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 12px 10px;font-size:11px;color:var(--mut)}#fs .ff a{color:var(--b)}
 .empty{padding:20px;color:var(--mut);text-align:center}
-footer{padding:10px 14px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);text-align:center}
+footer .soc{margin-top:8px}footer .soc a{color:var(--b);display:inline-block;padding:6px 4px;min-height:32px}footer{padding:10px 14px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);text-align:center}
 
 /* Alerts use the scanner's existing palette and stay out of Share view. */
 #alerts{margin:0 14px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -109,7 +109,7 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 <button class="act" id="shot">Share view</button>
 </header>
 <div id="fs" role="dialog" aria-modal="true" aria-label="Full-screen chart"></div>
-<section id="intro"><p><b>What is this?</b> Shows candle-pattern zones and price levels where price previously reacted, plus current strength rankings for the top 30 Binance coins. <b>Green</b> = recent strength, <b>red</b> = recent weakness; the number is a heuristic momentum and structure score (0-100), not a probability.</p><p><b>How to use it:</b> tap any coin to open its mechanical plan: an entry zone, a stop level, and nearby price levels (Targets, Resistance above, Support below) taken from recent candles.</p>
+<section id="intro"><p><b>What is this?</b> Shows candle-pattern zones and price levels where price previously reacted, plus current strength rankings for the top 30 Binance coins by volume, plus PAXG (gold). <b>Green</b> = recent strength, <b>red</b> = recent weakness; the number is a heuristic momentum and structure score (0-100), not a probability.</p><p><b>How to use it:</b> tap any coin to open its mechanical plan: an entry zone, a stop level, and nearby price levels (Targets, Resistance above, Support below) taken from recent candles.</p>
 <p class="method-line">Zones come from closed candles only: fresh (untouched), retested (touched, still valid), or dropped once a candle closes through them.</p>
 <details id="gloss"><summary>What do these words mean?</summary><dl>
 <dt>OB (order block)</dt><dd>A candle-pattern zone inferred from the last opposite candle before a strong move. Price sometimes reacts when it returns, with no guarantee. Used here as the Entry zone.</dd>
@@ -153,7 +153,7 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 <ul id="alert-log" aria-label="Recent alerts"></ul>
 </section>
 <div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
-<footer>Educational tool only, not financial advice. Data: Binance public market data; may be delayed or unavailable. Trade at your own risk. Not affiliated with or endorsed by Binance.</footer>
+<footer>Educational tool only, not financial advice. Data: Binance public market data; may be delayed or unavailable. Trade at your own risk. Not affiliated with or endorsed by Binance.<div class="soc">BTC Father: <a href="https://x.com/BTC_Bap" target="_blank" rel="noopener noreferrer">X</a> · <a href="https://www.instagram.com/btcfatherofficial/" target="_blank" rel="noopener noreferrer">Instagram</a> · <a href="https://t.me/BTCFatherOfficial" target="_blank" rel="noopener noreferrer">Telegram</a></div></footer>
 <script>
 const HOSTS=["https://data-api.binance.vision","https://api.binance.com","https://api1.binance.com"];
 let isSilent=false,baselined=new Set(),usedHost=null,stat=null,deep=null,host=null,tf="1h",timer=null,busy=false,results=[],open={},dataTF="1h",updatedAt=null;
