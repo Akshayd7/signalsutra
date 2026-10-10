@@ -46,7 +46,16 @@ main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 1
 .tag{padding:0 6px;border-radius:4px;border:1px solid var(--line);font-size:11px}
 .tag.in{border-color:#f59e0b;color:#f59e0b}
 .det{display:none;margin-top:8px}.row.open .det{display:block}
-svg{width:100%;height:170px;background:#0e1420;border-radius:6px}
+svg{width:100%;height:170px;display:block;background:#0e1420;border-radius:6px}
+.ch{position:relative;overflow:hidden;border-radius:6px}.chl{position:absolute;left:6px;color:#60a5fa;font-size:10px;line-height:12px;pointer-events:none;padding:1px 0}
+.ch{cursor:zoom-in}.chb{position:absolute;right:6px;top:6px;font-size:11px;color:var(--tx);background:#1b2538;border:1px solid var(--line);border-radius:4px;padding:2px 7px;pointer-events:none}
+#fs{position:fixed;inset:0;z-index:100;background:#0b0f17;display:none;flex-direction:column}#fs.on{display:flex}body.fso{overflow:hidden}
+#fs .fh{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);flex:none}#fs .fh b{font-size:16px}#fs .fh span{color:var(--mut);font-size:12px}#fs .fh .sp{flex:1}
+#fs .fx{min-width:44px;min-height:44px;font-size:22px;line-height:1;background:#1b2538;color:var(--tx);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+#fs .fc{flex:1;min-height:180px;position:relative}#fs .fc svg{position:absolute;inset:0;width:100%;height:100%;border-radius:0;background:#0e1420}
+#fs .fl{flex:none;max-height:38vh;overflow:auto;padding:6px 12px;border-top:1px solid var(--line);font-size:12px}
+#fs .fl .pl{display:flex;gap:8px;padding:3px 0;align-items:baseline}#fs .fl .pl>span:first-child{width:64px;color:var(--mut);flex:none}#fs .fl .pl b{font-weight:600}#fs .fl .pl em{font-style:normal;color:var(--mut)}
+#fs .ff{flex:none;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 12px 10px;font-size:11px;color:var(--mut)}#fs .ff a{color:var(--b)}
 .empty{padding:20px;color:var(--mut);text-align:center}
 footer{padding:10px 14px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);text-align:center}
 
@@ -92,13 +101,14 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 </style></head><body>
 <header>
 <div style="display:contents" class="x"></div><h1><span class="brand"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#0b0f17"/><rect x=".75" y=".75" width="30.5" height="30.5" rx="7.5" fill="none" stroke="url(#lg)" stroke-width="1.5"/><path d="M5 18h5l3-8 5 14 3-9 2 3h4" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>SignalSutra</b></span><span class="tagline">Crypto structure scanner · top USDT pairs</span></h1>
-<div class="seg ctl" id="tf"><button data-v="15m">15m</button><button data-v="1h" class="on">1h</button></div>
+<div class="seg ctl" id="tf"><button data-v="5m">5m</button><button data-v="15m">15m</button><button data-v="1h" class="on">1h</button></div>
 <label class="ctl">Min score <select id="min" class="act"><option>0</option><option>30</option><option selected>40</option><option>50</option><option>60</option></select></label>
 <label class="ctl"><input type="checkbox" id="auto" checked> auto 60s</label>
 <button class="act ctl" id="go">Refresh</button>
 <button class="act" id="install" hidden>Install app</button>
 <button class="act" id="shot">Share view</button>
 </header>
+<div id="fs" role="dialog" aria-modal="true" aria-label="Full-screen chart"></div>
 <section id="intro"><p><b>What is this?</b> Shows candle-pattern zones and price levels where price previously reacted, plus current strength rankings for the top 30 Binance coins. <b>Green</b> = recent strength, <b>red</b> = recent weakness; the number is a heuristic momentum and structure score (0-100), not a probability.</p><p><b>How to use it:</b> tap any coin to open its mechanical plan: an entry zone, a stop level, and nearby price levels (Targets, Resistance above, Support below) taken from recent candles.</p>
 <p class="method-line">Zones come from closed candles only: fresh (untouched), retested (touched, still valid), or dropped once a candle closes through them.</p>
 <details id="gloss"><summary>What do these words mean?</summary><dl>
@@ -110,7 +120,7 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 <dt>Stop</dt><dd>A level beyond the entry zone where this pattern no longer holds.</dd>
 <dt>Resistance / Support</dt><dd>Reference levels above / below price where price previously reacted.</dd></dl></details>
 <details id="method"><summary>How it works, and what it can't see</summary><dl>
-<dt>Method</dt><dd>Uses Binance spot candles only (15m or 1h, last 200). Zones, swing points and equal highs/lows are inferred from open/high/low/close with fixed rules. Structure uses closed candles; the forming candle is used only for current price.</dd>
+<dt>Method</dt><dd>Uses Binance spot candles only (5m, 15m or 1h, last 200). Zones, swing points and equal highs/lows are inferred from open/high/low/close with fixed rules. Structure uses closed candles; the forming candle is used only for current price.</dd>
 <dt>Zone states</dt><dd>One rule everywhere, from closed candles only. Fresh: no closed candle has overlapped the zone since the move. Retested: a closed candle has, and the zone is still valid. Dropped: a candle closed beyond its far edge. The live candle never changes the state. If live price is already beyond the far edge, the board says "price through zone" and the Position Builder hides it until the candle closes.</dd><dt>Order block (OB)</dt><dd>The last opposite-colour candle before a strong candle (body over 1.3x ATR).</dd><dt>Levels</dt><dd>Swing highs/lows, plus equal highs/lows (clusters within 0.12%). Levels that price has since wicked through are not shown as unswept. A sweep needs a wick past the cluster extreme and a close back inside.</dd>
 <dt>BOS tag</dt><dd>Shown when the strong candle closed beyond the most recent swing point that had not already been broken.</dd>
 <dt>Cannot see</dt><dd>Order book, open interest, funding, futures, news, or who is trading. It does not know of any real orders. Levels are patterns in past prices only.</dd>
@@ -122,7 +132,7 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 <section class="board bear"><h2>Bearish <small id="nr"></small></h2><div class="list" id="bear"></div></section>
 </main>
 <section id="positions" aria-labelledby="position-heading">
-<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins where price is inside a valid order-block zone (one not yet closed through) or within 1% of its near edge. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Informational only, not a recommendation.</p></div>
+<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins where price is inside a valid order-block zone (one not yet closed through) or within 1% of its near edge. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Shows up to 6 per side, closest first. Informational only, not a recommendation.</p></div>
 <div class="position-grid">
 <section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="empty">Waiting for market data.</div></div></section>
 <section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="empty">Waiting for market data.</div></div></section>
@@ -223,14 +233,14 @@ function analyse(sym,t,c){
   return res;
 }
 function spark(r,side){
-  const c=r.c,W=300,H=170,pad=4,o=r[side].ob,pool=r[side].pool;
+  const c=r.c,W=300,H=170,pad=14,o=r[side].ob,pool=r[side].pool;
   let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
   [o&&o.top,o&&o.bot,pool&&pool.p].forEach(v=>{if(v){lo=Math.min(lo,v);hi=Math.max(hi,v)}});
   const y=v=>pad+(hi-v)/(hi-lo||1)*(H-2*pad),w=W/c.length;let s="";
   if(o){const x0=Math.max(0,Math.min(c.length-1,o.idx-(r.cOff||0)))*(W/c.length);s+=`<rect x="${x0}" y="${y(o.top)}" width="${W-x0}" height="${Math.max(2,y(o.bot)-y(o.top))}" fill="${side=="bull"?"#22c55e":"#ef4444"}" opacity=".22"/>`}
-  if(pool)s+=`<line x1="0" x2="${W}" y1="${y(pool.p)}" y2="${y(pool.p)}" stroke="#60a5fa" stroke-dasharray="4 3"/><text x="4" y="${y(pool.p)-3}" fill="#60a5fa" font-size="10">${pool.eq?"equal "+(side=="bull"?"highs":"lows")+" ×"+pool.n:"swing "+(side=="bull"?"high":"low")}</text>`;
+  let lab="";if(pool){s+=`<line x1="0" x2="${W}" y1="${y(pool.p)}" y2="${y(pool.p)}" stroke="#60a5fa" stroke-dasharray="4 3"/>`;const py=y(pool.p)/H*100,tx=pool.eq?"equal "+(side=="bull"?"highs":"lows")+" ×"+pool.n:"swing "+(side=="bull"?"high":"low");lab=`<span class="chl" style="top:${py}%;${py<14?"":"transform:translateY(-100%)"}">${tx}</span>`}
   c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*w+w/2;s+=`<line x1="${x}" x2="${x}" y1="${y(k.h)}" y2="${y(k.l)}" stroke="${col}"/><rect x="${x-w*.32}" y="${y(Math.max(k.o,k.c))}" width="${w*.64}" height="${Math.max(1,Math.abs(y(k.o)-y(k.c)))}" fill="${col}"/>`});
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg>`;
+  return `<div class="ch"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg>${lab}<span class="chb">⤢ Full screen</span></div>`;
 }
 
 // Trade plan: mechanical, built only from levels the engine already found. Missing parts stay "n/a".
@@ -287,7 +297,7 @@ function rowHTML(r,side){
   const obTxt=o?`<span><span title="Order block: candle-pattern zone before a strong move (inferred)">Entry zone</span> <b>${fmt(o.bot)} – ${fmt(o.top)}</b> ${o.inside?'<span class="tag in">in zone</span>':o.through?'<span class="tag" title="Live price is beyond the far edge. The zone is dropped if the candle closes there.">price through zone</span>':`(${o.dist.toFixed(o.dist<10?1:0)}% away)`}${o.bos?' <span class="tag" title="Break of structure: the move closed beyond the most recent unbroken swing">BOS</span>':""}${o.tapped&&!o.inside?' <span class="tag" title="A closed candle traded back into the zone after the move. The zone is still valid.">retested</span>':""}</span>`:`<span>No valid zone</span>`;
   const p=d.pool,pd=p?Math.abs(p.p-r.price)/r.price*100:0;
   const lq=p?`<span>${side=="bull"?"Resistance (reference level) above":"Support (reference level) below"} <b>${fmt(p.p)}</b> (${pd.toFixed(pd<10?1:0)}%)${p.eq?" · equal ×"+p.n:" · swing"}</span>`:`<span>No nearby pool</span>`;
-  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}</div><div class="det">${spark(r,side)}${tradePlan(r,side,o)}</div></div>`;
+  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}</div><div class="det">${spark(r,side)}${tradePlan(r,side,o)}</div></div>`;
 }
 // Distance is 0 inside, otherwise the percent gap from price to the near edge.
 function positionDistance(price,o,side){
@@ -304,14 +314,14 @@ function renderPositions(){
   const share=document.body.classList.contains("share");
   $("position-heading").firstChild.textContent=share?"Position zones ":"Position Builder ";$("position-tf").textContent=dataTF;
   for(const [side,name] of [["bull","long"],["bear","short"]]){
-    const all=positionRows(side),rows=share?all.slice(0,5):all;
-    $("position-"+name+"-count").textContent=share?`${rows.length} of ${all.length}`:`${all.length} coins`;
+    const all=positionRows(side),rows=all.slice(0,share?5:6);
+    $("position-"+name+"-count").textContent=rows.length<all.length?`top ${rows.length} of ${all.length}`:`${all.length} coin${all.length===1?"":"s"}`;
     $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span>Edge gap <b>${distance.toFixed(2)}%</b></span><span>Age <b>${o.age} candles</b></span></div><div class="det">${tradePlan(r,side,o)}</div></div>`).join(""):'<div class="empty">No coins in zone right now or within 1%.</div>';
   }
 }
 function hostLabel(h){return h?"Binance spot via "+h.replace("https://",""):"unknown host"}
 function renderStatus(){if(!stat||!updatedAt)return;const age=Math.max(0,Math.round((Date.now()-updatedAt)/1000)),ageTxt=age<90?age+"s ago":Math.round(age/60)+" min ago";
-  const tfms=dataTF==="15m"?900000:3600000,stale=Date.now()-stat.candle>1.5*tfms;
+  const tfms=dataTF==="5m"?300000:dataTF==="15m"?900000:3600000,stale=Date.now()-stat.candle>1.5*tfms;
   $("status").textContent=`${stat.loaded} of ${stat.total} pairs loaded · ${dataTF} · ${hostLabel(usedHost)} · updated ${ageTxt} · latest candle ${new Date(stat.candle).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${stale?" (market data looks stale)":""}`}
 setInterval(renderStatus,5000);
 function renderSource(){if(updatedAt)$("src").textContent=`Source: ${hostLabel(usedHost)} · ${dataTF} · ${updatedAt.toLocaleString()}`}
@@ -320,8 +330,8 @@ function render(){
   const min=+$("min").value;
   for(const side of["bull","bear"]){
     let all=results.filter(r=>r[side].score>=min&&r[side].move>0).sort((a,b)=>b[side].score-a[side].score);if(document.body.classList.contains("share"))all=all.slice(0,8);
-    const hidden=results.length-all.length;
-    $(side).innerHTML=all.length?all.map(r=>rowHTML(r,side)).join(""):'<div class="empty">Nothing above the score filter.</div>';
+    const hidden=results.length-all.length,cap=all.length;
+    $(side).innerHTML=all.length?all.slice(0,cap).map(r=>rowHTML(r,side)).join(""):'<div class="empty">Nothing above the score filter.</div>';
     $(side=="bull"?"nb":"nr").textContent=`${all.length} shown · ${hidden} filtered`;
   }
 }
@@ -405,13 +415,13 @@ async function scan(){
   try{
     const tk=await api("/api/v3/ticker/24hr");
     const have=new Set(tk.map(x=>x.symbol));
-    const top=tk.filter(x=>x.symbol.endsWith("USDT")&&!STABLE.test(x.symbol)&&!pegged(x)&&!(m=>m&&have.has(m[1]+"USDT"))(x.symbol.match(/^(.+?)(?:UP|DOWN|BULL|BEAR)USDT$/))).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,30);
+    const top=tk.filter(x=>x.symbol.endsWith("USDT")&&!STABLE.test(x.symbol)&&!pegged(x)&&!(m=>m&&have.has(m[1]+"USDT"))(x.symbol.match(/^(.+?)(?:UP|DOWN|BULL|BEAR)USDT$/))).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,30);{const g=tk.find(x=>x.symbol==="PAXGUSDT");if(g&&!top.some(x=>x.symbol==="PAXGUSDT"))top.push(g)}
     const out=[];let i=0,failed=0;
     await Promise.all(Array.from({length:6},async()=>{while(i<top.length){const t=top[i++];try{const k=await api(`/api/v3/klines?symbol=${t.symbol}&interval=${scanTF}&limit=200`);
       const c=k.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5],ct:+x[6]}));out.push(analyse(t.symbol.replace("USDT",""),t,c))}catch(e){failed++}}}));
     if(!out.length)throw new Error("no data");
     if(scanTF===tf){
-    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();applyDeep();
+    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();if(fsState)renderFS();applyDeep();
     try{isSilent=!baselined.has(scanTF);for(const r of out)checkAlerts(r,scanTF);if(isSilent)alertBatch=[];else flushAlerts();baselined.add(scanTF)}catch(e){console.error("alerts",e)}finally{isSilent=false}
     if(zoneState.size>5000)zoneState.clear();
     if(positionState.size>5000)positionState.clear();
@@ -425,12 +435,50 @@ document.querySelectorAll("#tf button").forEach(b=>b.onclick=()=>{document.query
 $("go").onclick=scan;$("shot").onclick=()=>{const on=document.body.classList.toggle("share");$("shot").textContent=on?"Exit share view":"Share view";renderSource();render()};$("auto").onchange=sched;$("min").onchange=render;
 $("alerts-toggle").onclick=()=>{const o=$("alerts").classList.toggle("open");$("alerts-toggle").textContent=o?"Hide settings":"Show settings";$("alerts-toggle").setAttribute("aria-expanded",o)};
 function toggleRow(r){r.classList.toggle("open");const o=r.classList.contains("open");open[r.dataset.k]=o;r.setAttribute("aria-expanded",o)}
-document.addEventListener("click",e=>{const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
+
+// Full-screen chart (own SVG, no third-party code). Plan levels come from the same rules as the plan panel.
+function planCore(r,side,zone){
+  const price=r.price,long=side==="bull";
+  if(!zone){const zs=(r.positionOB[side]||[]).map(o=>({o,d:long?Math.abs(price-o.top):Math.abs(o.bot-price)})).sort((a,b)=>a.d-b.d);if(zs.length)zone=zs[0].o}
+  if(!zone)return {zone:null,tps:[]};
+  const all=dedupe([...planLevels(r),...planZoneLevels(r,zone)]);
+  const buf=Math.max(0.003*price,0.5*(r.atr||0)),slp=long?zone.bot-buf:zone.top+buf,base=long?Math.max(price,zone.top):Math.min(price,zone.bot);
+  const t=long?all.filter(x=>x.p>base).sort((a,b)=>a.p-b.p):all.filter(x=>x.p<base).sort((a,b)=>b.p-a.p);
+  return {zone,slp,tps:t.slice(0,3).map(x=>roleLabel(x,price))};
+}
+let fsState=null;
+function renderFS(){
+  const el=$("fs");if(!fsState)return;const r=results.find(x=>x.sym===fsState.sym);if(!r){closeFS(true);return}
+  const side=fsState.side,long=side==="bull",pc=planCore(r,side,r[side].ob),c=r.c,z=pc.zone;
+  el.innerHTML=`<div class="fh"><b>${r.sym}/USDT</b><span class="${long?"long":"short"}" style="color:${long?"var(--g)":"var(--r)"}">${long?"Candidate long":"Candidate short"}</span><span>${dataTF}</span><span class="sp"></span><b>${fmt(r.price)}</b><button class="fx" aria-label="Close full-screen chart">×</button></div><div class="fc"></div><div class="fl"></div><div class="ff"><span>Live price from the last Binance candle. Levels are illustrative, not predictions.</span><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}USDT" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div>`;
+  const fc=el.querySelector(".fc"),W=Math.max(200,fc.clientWidth),H=Math.max(160,fc.clientHeight),padR=64,padT=12,padB=12;
+  let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
+  const lv=[];
+  if(z){lv.push({p:z.top,k:"zone"},{p:z.bot,k:"zone"},{p:pc.slp,k:"sl"});pc.tps.forEach((x,i)=>x&&lv.push({p:x.p,k:"tp",n:i+1}))}
+  const rng=hi-lo;for(const l of lv){if(l.k==="tp"&&l.n===3&&(l.p>hi+rng||l.p<lo-rng))continue;lo=Math.min(lo,l.p);hi=Math.max(hi,l.p)}
+  const m=(hi-lo)*0.04;lo-=m;hi+=m;
+  const y=v=>padT+(hi-v)/(hi-lo||1)*(H-padT-padB),cw=(W-padR)/c.length;let s="";
+  const zi=Math.max(0,Math.min(c.length-1,(z?z.idx:0)-(r.cOff||0)));
+  if(z)s+=`<rect x="${zi*cw}" y="${y(z.top)}" width="${W-padR-zi*cw}" height="${Math.max(2,y(z.bot)-y(z.top))}" fill="${long?"#22c55e":"#ef4444"}" opacity=".22"/>`;
+  c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*cw+cw/2;s+=`<line x1="${x}" x2="${x}" y1="${y(k.h)}" y2="${y(k.l)}" stroke="${col}"/><rect x="${x-cw*.32}" y="${y(Math.max(k.o,k.c))}" width="${cw*.64}" height="${Math.max(1,Math.abs(y(k.o)-y(k.c)))}" fill="${col}"/>`});
+  const line=(p,col,txt,dash)=>{const yy=y(p);return `<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="1.2"${dash?` stroke-dasharray="${dash}"`:""}/><rect x="${W-padR}" y="${yy-8}" width="${padR}" height="16" fill="${col}"/><text x="${W-padR+4}" y="${yy+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(p)}</text>${txt?`<text x="4" y="${Math.max(10,yy-3)}" fill="${col}" font-size="11">${txt}</text>`:""}`};
+  if(z){s+=line(z.top,long?"#22c55e":"#ef4444","Entry zone","");s+=line(z.bot,long?"#22c55e":"#ef4444","","");s+=line(pc.slp,"#f97316","Stop","5 3");pc.tps.forEach((x,i)=>{if(x&&y(x.p)>0&&y(x.p)<H)s+=line(x.p,"#60a5fa","Target "+(i+1),"4 3")})}
+  s+=line(r.price,"#e5e7eb","Price","2 2");
+  fc.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${r.sym} candle chart with entry, stop and target levels">${s}</svg>`;
+  const f=el.querySelector(".fl");
+  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>no valid zone on this side</em></div>`);
+}
+function openFS(sym,side){fsState={sym,side};document.body.classList.add("fso");$("fs").classList.add("on");try{history.pushState({fs:1},"")}catch(e){}renderFS();const x=$("fs").querySelector(".fx");x&&x.focus()}
+function closeFS(fromPop){if(!fsState)return;fsState=null;$("fs").classList.remove("on");$("fs").innerHTML="";document.body.classList.remove("fso");if(!fromPop&&history.state&&history.state.fs){try{history.back()}catch(e){}}}
+window.addEventListener("popstate",()=>{if(fsState)closeFS(true)});
+window.addEventListener("resize",()=>{if(fsState)renderFS()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&fsState)closeFS()});
+document.addEventListener("click",e=>{if(e.target.closest("#fs .fx")){closeFS();return}const chEl=e.target.closest(".ch");if(chEl){const rw=chEl.closest(".row,.position-row");const mm=rw&&/(bull|bear)([A-Z0-9]+)$/.exec(rw.dataset.k);if(mm){openFS(mm[2],mm[1]);return}}const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{pl.textContent="Link copied"},()=>{window.prompt("Copy this link:",url)});return}
   if(e.target.closest(".plan"))return;const r=e.target.closest(".row,.position-row");if(r)toggleRow(r)});
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".row,.position-row")){e.preventDefault();toggleRow(e.target)}});
 (function(){const q=new URLSearchParams(location.search),sym=(q.get("sym")||"").toUpperCase(),t=q.get("tf"),sd=q.get("side");
-  if(/^[A-Z0-9]{1,12}$/.test(sym)){deep={sym,side:sd==="bull"||sd==="bear"?sd:null};if(t==="15m"||t==="1h"){tf=t;document.querySelectorAll("#tf button").forEach(b=>b.classList.toggle("on",b.dataset.v===t))}}})();
+  if(/^[A-Z0-9]{1,12}$/.test(sym)){deep={sym,side:sd==="bull"||sd==="bear"?sd:null};if(t==="5m"||t==="15m"||t==="1h"){tf=t;document.querySelectorAll("#tf button").forEach(b=>b.classList.toggle("on",b.dataset.v===t))}}})();
 function applyDeep(){if(!deep)return;const d=deep;deep=null;const r=results.find(x=>x.sym===d.sym);if(!r)return;
   const side=d.side||(r.bull.score>=r.bear.score?"bull":"bear");open[side+r.sym]=true;open["pos"+side+r.sym]=true;
   if(!(r[side].score>=+$("min").value&&r[side].move>0))$("min").value="0";render();
