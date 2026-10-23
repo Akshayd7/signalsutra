@@ -98,6 +98,36 @@ body.share .position-head h2{font-size:16px}body.share .position-head p{display:
 body.share #intro,body.share #alerts,body.share #install{display:none!important}
 .tip{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:50%;background:var(--line);color:var(--mut);font-size:10px;cursor:help;margin-left:4px}
 button,select,summary{min-height:36px}select.act{background:var(--card);color:var(--tx)}
+
+/* AI sections: same-origin static ai/ files + optional on-demand worker; hidden when none exist. */
+#ai-desk,#ai-quick{margin:0 14px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#ai-desk .ai-head,#ai-quick .ai-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+#ai-desk .ai-head h2,#ai-quick .ai-head h2{font-size:14px;margin:0 auto 0 0}
+#ai-desk .ai-head small,#ai-quick .ai-head small{color:var(--mut);font-weight:400}
+#ai-desk-note,#ai-quick-note{margin:0;padding:8px 12px;color:var(--mut);font-size:12px;border-bottom:1px solid var(--line)}
+.ai-rows{padding:0}
+.ai-row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:8px 12px;border-bottom:1px solid var(--line)}
+.ai-row:last-child{border-bottom:0}
+.ai-sym{font-weight:650;width:64px;flex:none}
+.ai-rate{font-weight:700;padding:1px 8px;border-radius:6px;font-size:12px;color:#06101f;flex:none}
+.ai-note{color:var(--mut);font-size:12px;flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+.ai-when{color:var(--mut);font-size:11px;flex:1 1 100%;overflow-wrap:anywhere}
+.ai-sample{color:#f59e0b;border:1px solid #f59e0b;border-radius:4px;padding:0 5px;font-size:11px}
+.ai-unv{color:#f87171;border:1px solid #f87171;border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;flex:none}
+.ai-quick-chip{color:#93b4f5;border:1px solid #93b4f5;border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;flex:none}
+.ai-warn{color:#f87171;font-size:12px;flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+.ai-block{margin-top:8px;background:#0e1420;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;overflow-wrap:anywhere}
+.ai-block h4{margin:0 0 4px;font-size:13px}
+.ai-block p{margin:4px 0;color:var(--mut)}
+.ai-block a{color:var(--b)}
+body.share #ai-desk,body.share #ai-quick{display:none!important}
+.ai-tech{flex:1 1 100%;font-size:12px}
+.ai-tech summary{cursor:pointer;color:var(--b)}
+.ai-tech p{margin:6px 0 0;color:var(--mut)}
+.ai-qbanner{display:block;width:100%;color:#e8b45a;font-size:11px;font-weight:700;letter-spacing:.2px}
+.ai-quick-btn{margin-left:auto;background:none;border:1px solid #93b4f5;color:#93b4f5;border-radius:6px;padding:1px 8px;font-size:11px;cursor:pointer;flex:none}
+.ai-quick-btn:disabled{opacity:.5;cursor:default}
+#ai-quick-status{padding:6px 12px;color:var(--mut);font-size:12px;border-bottom:1px solid var(--line)}
 </style></head><body>
 <header>
 <div style="display:contents" class="x"></div><h1><span class="brand"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#0b0f17"/><rect x=".75" y=".75" width="30.5" height="30.5" rx="7.5" fill="none" stroke="url(#lg)" stroke-width="1.5"/><path d="M5 18h5l3-8 5 14 3-9 2 3h4" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>SignalSutra</b></span><span class="tagline">Crypto structure scanner · top USDT pairs</span></h1>
@@ -137,6 +167,17 @@ button,select,summary{min-height:36px}select.act{background:var(--card);color:va
 <section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="empty">Waiting for market data.</div></div></section>
 <section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="empty">Waiting for market data.</div></div></section>
 </div></section>
+<section id="ai-quick" hidden aria-labelledby="ai-quick-heading">
+<div class="ai-head"><h2 id="ai-quick-heading">AI quick check <small id="ai-quick-meta"></small></h2></div>
+<p id="ai-quick-note">A one-pass AI read of a market snapshot: recent 15m/1h candles plus the scanner zone event shown above, run on demand by a single free model. No news or social feeds, no multi-agent debate - this is NOT the TradingAgents research desk. It can be wrong and goes stale within minutes; every row shows when it ran and exactly how old its inputs were. Research only, not advice. It never changes the entry zone, stop or targets - those stay mechanical from the scanner. The zone comes from this app's Binance feed while the check cross-verifies prices against Yahoo candles - when the two feeds disagree beyond a strict tolerance, no read is rendered at all. VERIFIED means the words were re-checked against the inputs the AI received, not that the read is correct. UNVERIFIED rows are NOT FOR TRADING.</p>
+<div id="ai-quick-status" hidden></div>
+<div class="ai-rows" id="ai-quick-rows"></div>
+</section>
+<section id="ai-desk" hidden aria-labelledby="ai-desk-heading">
+<div class="ai-head"><h2 id="ai-desk-heading">AI research desk <small id="ai-desk-meta"></small></h2></div>
+<p id="ai-desk-note">Independent multi-agent AI research opinion (TradingAgents, free local/hosted model), refreshed by a periodic run. It does not see live prices after it is generated and it can be wrong. Each row shows when the run finished and how old its input data is. Research only, not advice. Opinions marked UNVERIFIED have not been re-checked against their source inputs and are NOT FOR TRADING. VERIFIED means re-checked against its own inputs for consistency, not that the opinion is correct. AI text is generic and may assume account features or instruments you may not have.</p>
+<div class="ai-rows" id="ai-rows"></div>
+</section>
 <section id="alerts" aria-labelledby="alert-heading">
 <div class="alert-head"><h2 id="alert-heading">Alerts <small id="alert-count" style="color:var(--mut);font-weight:400">0 recent</small></h2><button class="act" id="alerts-toggle" aria-expanded="false">Show settings</button><button class="act" id="notify">Enable browser alerts</button><button class="act" id="clear-alerts">Clear log</button></div>
 <div class="alert-controls">
@@ -160,6 +201,168 @@ let isSilent=false,baselined=new Set(),usedHost=null,stat=null,deep=null,host=nu
 const STABLE=/^(USDC|FDUSD|TUSD|USDP|DAI|BUSD|USDE|EUR|EURI|AEUR|XUSD|USD1|PAXG|XAUT|WBTC|WBETH|BFUSD|UST|RLUSD|USDG|USDS|PYUSD|USDD|FRAX|GUSD|LUSD|SUSD|USDT0)/;
 const pegged=t=>{const l=+t.lastPrice,h=+t.highPrice,lo=+t.lowPrice;return l>0.97&&l<1.03&&(h-lo)/l<0.01}; // stablecoin-like: near $1 with under 1% daily range
 const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"\']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[c]));
+let aiIndex=null,aiQuickItems=[];
+// On-demand quick checks go through this Cloudflare Worker, which holds model
+// access server-side (Workers AI binding - no secret in this repo or the browser).
+// Empty string = on-demand button hidden; pre-published quick items still render.
+const AI_WORKER_URL="https://signalsutra-ai-quick-check.pkt3f1.workers.dev";
+const AI_RATE_COLORS={"Buy":"#22c55e","Overweight":"#4ade80","Hold":"#8b95a7","Underweight":"#f87171","Sell":"#ef4444","REVIEW":"#f59e0b"};
+// Freshness: the desk is fed by a scheduled run (intended cadence: daily). A report
+// speaks for its own analysis date only; once the next run is overdue (>24h since
+// generation) the item is history, so its verdict is hidden, not just dimmed.
+const AI_FRESH_MS=24*36e5;
+// A quick check is a one-pass read of a snapshot: it goes stale in minutes.
+const AI_QUICK_FRESH_MS=30*60e3;
+// Clock skew: a timestamp >10min in the future cannot be trusted, so the item is
+// UNKNOWN and renders NOT CURRENT - a bad clock must never look fresh forever.
+const aiFuture=it=>{const t=it&&it.generated_at?new Date(it.generated_at).getTime():NaN;return Number.isFinite(t)&&t>Date.now()+10*60e3};
+const aiStale=it=>{const t=it&&it.generated_at?new Date(it.generated_at).getTime():NaN;
+  if(!Number.isFinite(t))return true;
+  if(aiFuture(it))return true;
+  return (Date.now()-t)>(it.kind==="quick"?AI_QUICK_FRESH_MS:AI_FRESH_MS)};
+// Plain-words meaning of each verdict: the SAME statement in simple language, not new analysis.
+const AI_PLAIN={"Buy":"the AI's research leans towards buying","Overweight":"the AI's research leans slightly towards buying","Hold":"the AI's research sees no strong reason to buy or sell right now","Underweight":"the AI's research leans slightly towards selling","Sell":"the AI's research leans towards selling","REVIEW":"the AI could not form a clear opinion this run"};
+const aiPlain=r=>AI_PLAIN[r]||AI_PLAIN.REVIEW;
+const aiWhen=it=>it.generated_at?new Date(it.generated_at).toLocaleString():"unknown";
+// Provenance: an item is shown as UNVERIFIED unless a manual audit re-checked its cited
+// numbers against the run's preserved inputs and flipped verification to "verified".
+// VERIFIED = consistency with inputs, NOT validated analysis. Unverified items never
+// show an actionable verdict on the main screen.
+const aiUnv=it=>it.verification!=="verified";
+const AI_UNV_MSG="This AI opinion could not be re-checked against its source inputs - NOT FOR TRADING.";
+const aiQuickLine=it=>`${esc(it.plain||"")} (one-pass read; bias: ${esc((it.rating||"").toLowerCase())}, confidence: ${esc(it.confidence||"low")} - capped, no multi-agent debate)`;
+// Invalidation is only shown when it is the scanner zone's own far edge (grounded
+// scanner semantics: a zone is dropped once a candle closes beyond its far edge).
+// An indicator level the model volunteered is never relabeled "invalidation".
+const aiInvalidation=it=>it.invalidation_source==="scanner zone edge"&&it.invalidation
+  ?` · Invalidation (scanner rule only): ${esc(it.invalidation)} - a candle close beyond this level drops the zone. Mechanical level, not a model prediction.`:"";
+function aiRowHTML(it){
+  const sym=it.ticker.replace(/-USD$/,"").toUpperCase(),stale=aiStale(it),col=AI_RATE_COLORS[it.rating]||"#8b95a7",unv=aiUnv(it)&&!it.sample,quick=it.kind==="quick";
+  const verdict=stale?'<span class="ai-sample">NOT CURRENT</span>':unv?'<span class="ai-unv">UNVERIFIED</span>':quick?'<span class="ai-quick-chip">QUICK CHECK</span>':`<span class="ai-rate" style="background:${col}">${esc(it.rating||"REVIEW")}</span>`;
+  const plain=stale?(aiFuture(it)?"Timestamp is in the future (clock skew) - freshness unknown, treat as NOT CURRENT.":"Refresh overdue - this opinion speaks for its analysis date only, not today."):unv?AI_UNV_MSG:quick?aiQuickLine(it)+aiInvalidation(it):`In plain words: ${aiPlain(it.rating)}.`;
+  const plainCls=(!stale&&unv)?"ai-warn":"ai-note";
+  const tech=(!stale&&(unv||it.decision_excerpt))?`<details class="ai-tech"><summary>${unv?"Unverified AI opinion details (not for trading)":"Technical summary"}</summary>${unv?`<p>AI opinion: ${esc(it.rating||"REVIEW")} - in plain words: ${aiPlain(it.rating)}.</p>`:""}${it.decision_excerpt?`<p>${esc(it.decision_excerpt)}</p>`:""}</details>`:"";
+  const when=`AI run finished ${esc(aiWhen(it))}${quick?"":` · analysis of ${esc(it.analysis_date||"?")}`} · ${it.data_as_of?esc(it.data_as_of):"input data as-of not recorded"}`;
+  const qbanner=quick&&!stale?'<span class="ai-qbanner">One-pass snapshot · No news or order-flow · Not audited · Not for trading decisions.</span>':"";
+  return `<div class="ai-row"><span class="ai-sym">${esc(sym)}</span>${verdict}${qbanner}<span class="${plainCls}">${plain}</span><span class="ai-when">${when}</span>${it.sample?'<span class="ai-sample">SAMPLE</span>':""}${tech}${it.report?`<a href="${esc(it.report)}" target="_blank" rel="noopener noreferrer" style="color:var(--b);font-size:12px;flex:none">${esc(it.report_label||"Full report")} ↗</a>`:""}</div>`;
+}
+function aiRenderQuick(){
+  const sec=$("ai-quick");if(!sec)return;
+  const items=aiQuickItems;
+  if(!items.length&&!AI_WORKER_URL){sec.hidden=true;return;}
+  $("ai-quick-rows").innerHTML=items.map(aiRowHTML).join("");
+  const times=items.map(it=>new Date(it.generated_at||0).getTime()).filter(Number.isFinite),latest=times.length?Math.max(...times):NaN;
+  $("ai-quick-meta").textContent=items.length?`${items.length} check${items.length===1?"":"s"} · latest ${Number.isFinite(latest)?new Date(latest).toLocaleString():"unknown"}`:"on-demand checks of scanner zone events";
+  sec.hidden=false;
+}
+async function loadAI(){
+  try{
+    let j=null,offline=false;
+    try{
+      const r=await fetch("ai/index.json",{cache:"no-cache"});
+      if(r.ok){const p=await r.json();if(p&&Array.isArray(p.items))j=p;}
+    }catch(e){}
+    if(j){try{localStorage.setItem("aiDeskLastGood",JSON.stringify(j));}catch(e){}}
+    else{
+      try{const c=JSON.parse(localStorage.getItem("aiDeskLastGood")||"null");if(c&&Array.isArray(c.items)){j=c;offline=true;}}catch(e){}
+    }
+    const all=j?j.items.filter(it=>it&&typeof it.ticker==="string"):[];
+    aiQuickItems=all.filter(it=>it.kind==="quick");
+    // merge on-demand runtime results cached on this device
+    try{
+      const rt=JSON.parse(localStorage.getItem("aiQuickRuntime")||"{}");
+      for(const k of Object.keys(rt)){
+        const it=rt[k];if(!it||it.kind!=="quick")continue;
+        const sym=it.ticker.replace(/-USD$/,"").toUpperCase();
+        aiQuickItems=aiQuickItems.filter(x=>x.ticker.replace(/-USD$/,"").toUpperCase()!==sym);
+        aiQuickItems.push(it);
+      }
+    }catch(e){}
+    aiRenderQuick();
+    const desk=all.filter(it=>it.kind!=="quick");
+    const sec=$("ai-desk");
+    if(!desk.length)return; // desk stays hidden; quick section independent
+    aiIndex=new Map();
+    for(const it of desk)aiIndex.set(it.ticker.replace(/-USD$/,"").toUpperCase(),it);
+    $("ai-rows").innerHTML=desk.map(aiRowHTML).join("");
+    const times=desk.map(it=>new Date(it.generated_at||0).getTime()).filter(Number.isFinite),latest=times.length?Math.max(...times):NaN,allStale=desk.every(aiStale);
+    const nr=j.last_run&&Number.isFinite(j.last_run.neurons)?` · last run used ${Math.round(j.last_run.neurons*10)/10} neurons`:"";
+    $("ai-desk-meta").textContent=`${desk.length} coin${desk.length===1?"":"s"} · latest generated ${Number.isFinite(latest)?new Date(latest).toLocaleString():"unknown"}${nr}${allStale?" · STALE - no current run, treat all as history":""}${offline?" · desk offline - showing last known data":""}`;
+    if(allStale||offline)$("ai-desk-meta").style.color="#f59e0b";
+    sec.hidden=false;
+  }catch(e){/* no ai data yet: sections stay hidden, scanner unaffected */}
+}
+// --- on-demand trigger: read the scanner's own zone row and ask the worker ---
+function aiQuickStatus(msg){const el=$("ai-quick-status");if(!el)return;if(!msg){el.hidden=true;el.textContent="";return;}el.textContent=msg;el.hidden=false;}
+function aiDecoratePositions(){
+  if(!AI_WORKER_URL)return;
+  for(const [listId,side] of [["position-long","long"],["position-short","short"]]){
+    const list=$(listId);if(!list)continue;
+    list.querySelectorAll(".position-row").forEach(row=>{
+      if(row.querySelector(".ai-quick-btn"))return;
+      const top=row.querySelector(".position-top");if(!top)return;
+      const btn=document.createElement("button");
+      btn.className="ai-quick-btn";btn.type="button";btn.textContent="AI quick check";
+      btn.addEventListener("click",ev=>{ev.stopPropagation();aiRunQuick(row,side,btn);});
+      top.appendChild(btn);
+    });
+  }
+}
+function aiParseZoneRow(row,side){
+  const sym=(row.querySelector(".position-top b")||{}).textContent||"";
+  const state=(row.querySelector(".position-state")||{}).textContent||"";
+  const bs=[...row.querySelectorAll(".meta b")].map(b=>b.textContent.trim());
+  // meta order: "bot - top", price, "N candles"
+  const zm=(bs[0]||"").match(/([\d.,]+)\s*[–-]\s*([\d.,]+)/);
+  const num=s=>{const v=parseFloat(String(s).replace(/,/g,""));return Number.isFinite(v)?v:null};
+  const tf=(($("position-tf")||{}).textContent||"").trim();
+  return {symbol:sym,side,state,zone_low:zm?num(zm[1]):null,zone_high:zm?num(zm[2]):null,
+    price:num(bs[1]),age_candles:num(bs[2]),timeframe:tf,captured_at:new Date().toISOString()};
+}
+async function aiRunQuick(row,side,btn){
+  const ev=aiParseZoneRow(row,side);
+  if(!ev.symbol||ev.zone_low==null||ev.zone_high==null){aiQuickStatus("Could not read the zone from this row - quick check not started.");return;}
+  btn.disabled=true;btn.textContent="checking...";
+  aiQuickStatus(`Running a one-pass AI quick check for ${ev.symbol} (single free model, takes a few seconds)...`);
+  try{
+    const r=await fetch(AI_WORKER_URL.replace(/\/$/,"")+"/quick-check",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({symbol:ev.symbol,event:ev})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j||!j.item){aiQuickStatus(`Quick check failed honestly: ${esc(j.error||("HTTP "+r.status))}. Nothing was rendered.`);return;}
+    const it=j.item;it.kind="quick";it.runtime=true;it.verification="unverified"; // on-demand output is never pre-audited
+    try{
+      const rt=JSON.parse(localStorage.getItem("aiQuickRuntime")||"{}");
+      rt[it.ticker.replace(/-USD$/,"").toUpperCase()]=it;
+      localStorage.setItem("aiQuickRuntime",JSON.stringify(rt));
+    }catch(e){}
+    aiQuickItems=aiQuickItems.filter(x=>x.ticker.replace(/-USD$/,"").toUpperCase()!==it.ticker.replace(/-USD$/,"").toUpperCase());
+    aiQuickItems.push(it);
+    aiRenderQuick();
+    aiQuickStatus(`${ev.symbol} quick check finished ${new Date().toLocaleTimeString()} - UNVERIFIED one-pass read, not for trading. It goes NOT CURRENT after 30 minutes.`);
+  }catch(e){
+    aiQuickStatus("Quick check could not reach the service. Nothing was rendered.");
+  }finally{
+    btn.disabled=false;btn.textContent="AI quick check";
+  }
+}
+function aiBlock(sym){
+  const it=(aiIndex&&aiIndex.get(sym))||aiQuickItems.find(x=>x.ticker.replace(/-USD$/,"").toUpperCase()===sym);
+  if(!it)return "";
+  const stale=aiStale(it);
+  const col=AI_RATE_COLORS[it.rating]||"#8b95a7";
+  const unv=aiUnv(it)&&!it.sample;
+  const quick=it.kind==="quick";
+  const verdict=stale?'<span class="ai-sample">NOT CURRENT</span>':unv?'<span class="ai-unv">UNVERIFIED</span>':quick?'<span class="ai-quick-chip">QUICK CHECK</span>':`<span style="color:${col}">${esc(it.rating||"REVIEW")}</span>`;
+  const plain=stale?(aiFuture(it)?"Timestamp is in the future (clock skew) - freshness unknown, treat as NOT CURRENT.":"Refresh overdue - this opinion speaks for its analysis date only, not today."):unv?AI_UNV_MSG:quick?aiQuickLine(it)+aiInvalidation(it):`In plain words: ${aiPlain(it.rating)}.`;
+  const tech=(!stale&&(unv||it.decision_excerpt))?`<details class="ai-tech"><summary>${unv?"Unverified AI opinion details (not for trading)":"Technical summary"}</summary>${unv?`<p>AI opinion: ${esc(it.rating||"REVIEW")} - in plain words: ${aiPlain(it.rating)}.</p>`:""}${it.decision_excerpt?`<p>${esc(it.decision_excerpt)}</p>`:""}</details>`:"";
+  const qbanner=quick&&!stale?'<span class="ai-qbanner">One-pass snapshot · No news or order-flow · Not audited · Not for trading decisions.</span>':"";
+  return `<div class="ai-block"><h4>${quick?"AI quick check":"AI research desk"} · ${verdict}${it.sample?' <span class="ai-sample">SAMPLE</span>':""}</h4>${qbanner}<p>${plain}</p>${tech}<p>AI run finished ${esc(aiWhen(it))} · ${it.data_as_of?esc(it.data_as_of):"input data as-of not recorded"} - not live prices. It does not confirm or update the entry zone, stop or targets shown above - those are live and mechanical from the scanner.${it.report?` <a href="${esc(it.report)}" target="_blank" rel="noopener noreferrer">${esc(it.report_label||"full report")} ↗</a>`:""}</p></div>`;
+}
+// decorate scanner rows with the on-demand button after every scanner render
+if(typeof renderPositions==="function"){
+  const _aiRP=renderPositions;
+  renderPositions=function(){_aiRP();aiDecoratePositions();};
+}
 async function api(path){
   const list=host?[host]:HOSTS;let err;
   for(const h of list){const ac=new AbortController(),to=setTimeout(()=>ac.abort(),12000);try{const r=await fetch(h+path,{signal:ac.signal});if(!r.ok)throw new Error(h+" "+r.status);const j=await r.json();clearTimeout(to);host=h;return j}catch(e){clearTimeout(to);err=e}}
@@ -297,7 +500,7 @@ function rowHTML(r,side){
   const obTxt=o?`<span><span title="Order block: candle-pattern zone before a strong move (inferred)">Entry zone</span> <b>${fmt(o.bot)} – ${fmt(o.top)}</b> ${o.inside?'<span class="tag in">in zone</span>':o.through?'<span class="tag" title="Live price is beyond the far edge. The zone is dropped if the candle closes there.">price through zone</span>':`(${o.dist.toFixed(o.dist<10?1:0)}% away)`}${o.bos?' <span class="tag" title="Break of structure: the move closed beyond the most recent unbroken swing">BOS</span>':""}${o.tapped&&!o.inside?' <span class="tag" title="A closed candle traded back into the zone after the move. The zone is still valid.">retested</span>':""}</span>`:`<span>No valid zone</span>`;
   const p=d.pool,pd=p?Math.abs(p.p-r.price)/r.price*100:0;
   const lq=p?`<span>${side=="bull"?"Resistance (reference level) above":"Support (reference level) below"} <b>${fmt(p.p)}</b> (${pd.toFixed(pd<10?1:0)}%)${p.eq?" · equal ×"+p.n:" · swing"}</span>`:`<span>No nearby pool</span>`;
-  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}</div><div class="det">${spark(r,side)}${tradePlan(r,side,o)}</div></div>`;
+  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}</div><div class="det">${spark(r,side)}${tradePlan(r,side,o)}${aiBlock(r.sym)}</div></div>`;
 }
 // Distance is 0 inside, otherwise the percent gap from price to the near edge.
 function positionDistance(price,o,side){
@@ -487,6 +690,7 @@ function applyDeep(){if(!deep)return;const d=deep;deep=null;const r=results.find
   // Not on the board (score filter or no momentum on that side): show the linked plan on its own.
   const box=document.createElement("section");box.id="deeplink";box.innerHTML=`<h2>${r.sym} · ${d.side?side==="bull"?"long":"short":"linked"} view <small>shared link</small></h2>`+tradePlan(r,side,r[side].ob);
   $("status").after(box);box.scrollIntoView({block:"start"});}
+loadAI().then(()=>{if(results.length)render()});
 scan();
 // PWA: installable app shell. The service worker only caches this site's own files; Binance requests always go to the network.
 let installEvt=null;
