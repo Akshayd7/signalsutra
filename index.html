@@ -128,6 +128,16 @@ body.share #ai-desk,body.share #ai-quick{display:none!important}
 .ai-quick-btn{margin-left:auto;background:none;border:1px solid #93b4f5;color:#93b4f5;border-radius:6px;padding:1px 8px;font-size:11px;cursor:pointer;flex:none}
 .ai-quick-btn:disabled{opacity:.5;cursor:default}
 #ai-quick-status{padding:6px 12px;color:var(--mut);font-size:12px;border-bottom:1px solid var(--line)}
+.watch-vol{color:#8b95a7}
+.lvchip{font-size:11px;color:var(--mut)}
+.lvchip b{color:var(--tx);font-weight:550}
+.lvchip .lvdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:4px}
+.lvchip.hot b{color:#f59e0b}
+.volp{margin-top:8px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--mut)}
+.volp .volp-live{color:var(--tx);margin-bottom:4px}
+.volp .volp-cvd{margin-top:6px}
+.volp .volp-note{margin-top:6px;font-size:11px;opacity:.85}
+.volp b{color:var(--tx);font-weight:550}
 </style></head><body>
 <header>
 <div style="display:contents" class="x"></div><h1><span class="brand"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#0b0f17"/><rect x=".75" y=".75" width="30.5" height="30.5" rx="7.5" fill="none" stroke="url(#lg)" stroke-width="1.5"/><path d="M5 18h5l3-8 5 14 3-9 2 3h4" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>SignalSutra</b></span><span class="tagline">Crypto structure scanner · top USDT pairs</span></h1>
@@ -189,7 +199,7 @@ body.share #ai-desk,body.share #ai-quick{display:none!important}
 <label><input id="alert-sound" type="checkbox"> Sound</label>
 <label><input id="alert-browser" type="checkbox"> Browser alerts when hidden</label>
 </div>
-<p id="alert-help">Checks all 30 scanned pairs each refresh, independent of score filter. OB entries use current price; sweeps and activity use the latest closed candle and 20 prior candles. Position crossings require an observed outside-to-inside transition; the OB zone alert also needs an observed outside-to-inside move (a zone first seen with price already inside is not alerted). Polling may miss between-refresh crossings. Watch signals only.</p>
+<p id="alert-help">Checks all 30 scanned pairs each refresh, independent of score filter. OB entries use current price; sweeps and activity use the latest closed candle and 20 prior candles. Position crossings require an observed outside-to-inside transition; the OB zone alert also needs an observed outside-to-inside move (a zone first seen with price already inside is not alerted). Polling may miss between-refresh crossings. Live volume pace alerts use the live partial candle projected at its current rate (minimum 10% of the candle elapsed, stream connected for at least 30s) from Binance spot trades while the page is open; they complement the closed-candle spike alert and can fire between refreshes. Watch signals only.</p>
 <p id="notify-status" role="status"></p>
 <ul id="alert-log" aria-label="Recent alerts"></ul>
 </section>
@@ -435,14 +445,32 @@ function analyse(sym,t,c){
   res.lv={hi:sw.hi.map(x=>({p:x.p,t:cl[x.i].t,sw:swp(true,x)})),lo:sw.lo.map(x=>({p:x.p,t:cl[x.i].t,sw:swp(false,x)}))};res.eqH=eqH.map(x=>({...x,sw:swp(true,x)}));res.eqL=eqL.map(x=>({...x,sw:swp(false,x)}));res.swH=sw.hi.slice(-4);res.swL=sw.lo.slice(-4);
   return res;
 }
+function volProfile(c,B){
+  B=B||18;
+  if(!Array.isArray(c)||!c.length)return null;
+  const lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
+  if(!Number.isFinite(lo)||!Number.isFinite(hi)||hi<=lo)return null;
+  const bw=(hi-lo)/B,bs=[];for(let i=0;i<B;i++)bs.push(0);
+  for(const k of c){if(!Number.isFinite(k.v)||k.v<0)continue;const a=Math.max(0,Math.min(B-1,Math.floor((k.l-lo)/bw))),b=Math.max(0,Math.min(B-1,Math.floor((k.h-lo)/bw))),n=b-a+1,sh=k.v/n;for(let i=a;i<=b;i++)bs[i]+=sh}
+  let poc=0,mx=0;bs.forEach((v,i)=>{if(v>mx){mx=v;poc=i}});
+  if(!(mx>0))return null;
+  return {bs,poc,mx,bw,lo,pocPrice:lo+(poc+0.5)*bw};
+}
 function spark(r,side){
-  const c=r.c,W=300,H=170,pad=14,o=r[side].ob,pool=r[side].pool;
+  const c=r.c,W=300,H=170,pad=14,volH=34,pH=H-volH-8,o=r[side].ob,pool=r[side].pool;
   let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
   [o&&o.top,o&&o.bot,pool&&pool.p].forEach(v=>{if(v){lo=Math.min(lo,v);hi=Math.max(hi,v)}});
-  const y=v=>pad+(hi-v)/(hi-lo||1)*(H-2*pad),w=W/c.length;let s="";
+  const y=v=>pad+(hi-v)/(hi-lo||1)*(pH-2*pad),w=W/c.length;let s="";
+  const vp=volProfile(c.slice(0,-1)); // bins on the closed-candle price range: stable when overlays expand the chart range
+  if(vp){vp.bs.forEach((v,i)=>{const bwpx=(v/vp.mx)*W*0.22,y0=y(vp.lo+(i+1)*vp.bw),y1=y(vp.lo+i*vp.bw);if(y1<0||y0>pH)return;s+=`<rect x="0" y="${Math.max(0,y0)}" width="${bwpx}" height="${Math.max(1,Math.min(pH,y1)-Math.max(0,y0))}" fill="${i===vp.poc?"#f59e0b":"#8b95a7"}" opacity="${i===vp.poc?0.5:0.16}"/>`});
+  s+=`<line x1="0" x2="${W}" y1="${y(vp.pocPrice)}" y2="${y(vp.pocPrice)}" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;}
+  s+=`<text x="4" y="11" fill="#8b95a7" font-size="9">approx volume-at-price - not real traded volume</text>`;
   if(o){const x0=Math.max(0,Math.min(c.length-1,o.idx-(r.cOff||0)))*(W/c.length);s+=`<rect x="${x0}" y="${y(o.top)}" width="${W-x0}" height="${Math.max(2,y(o.bot)-y(o.top))}" fill="${side=="bull"?"#22c55e":"#ef4444"}" opacity=".22"/>`}
   let lab="";if(pool){s+=`<line x1="0" x2="${W}" y1="${y(pool.p)}" y2="${y(pool.p)}" stroke="#60a5fa" stroke-dasharray="4 3"/>`;const py=y(pool.p)/H*100,tx=pool.eq?"equal "+(side=="bull"?"highs":"lows")+" ×"+pool.n:"swing "+(side=="bull"?"high":"low");lab=`<span class="chl" style="top:${py}%;${py<14?"":"transform:translateY(-100%)"}">${tx}</span>`}
   c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*w+w/2;s+=`<line x1="${x}" x2="${x}" y1="${y(k.h)}" y2="${y(k.l)}" stroke="${col}"/><rect x="${x-w*.32}" y="${y(Math.max(k.o,k.c))}" width="${w*.64}" height="${Math.max(1,Math.abs(y(k.o)-y(k.c)))}" fill="${col}"/>`});
+  const vmax=Math.max(...c.map(k=>k.v))||1,vy=v=>pH+6+(volH-4)*(1-v/vmax),vbase=pH+6+volH-4;
+  s+=`<line x1="0" x2="${W}" y1="${pH+3}" y2="${pH+3}" stroke="#2a3550" stroke-width="1"/>`;
+  c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*w+w/2,live=i===c.length-1;s+=`<rect x="${x-w*.32}" y="${vy(k.v)}" width="${w*.64}" height="${Math.max(1,vbase-vy(k.v))}" fill="${col}" opacity="${live?0.4:0.75}"/>`});
   return `<div class="ch"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${s}</svg>${lab}<span class="chb">⤢ Full screen</span></div>`;
 }
 
@@ -495,12 +523,41 @@ function tradePlan(r,side,zone){
 <button class="act plan-link" data-sym="${r.sym}" data-side="${side}">Copy link to this plan</button>
 <p class="note">Mechanical from current structure, not advice. Educational tool only.</p></div>`;
 }
+function numOrNull(x){return (x==null||typeof x==="boolean"||String(x).trim()==="")?null:(Number.isFinite(+x)?+x:null)} // strict: missing/empty/whitespace/boolean stay null, never fabricated 0
+function parseKline(x){ // one REST kline row -> candle, or null when any required field is malformed: missing/empty/whitespace/boolean values coerce to 0 under raw +, so every required field goes through the strict parser
+  if(!Array.isArray(x)||x.length<10)return null;
+  const t=numOrNull(x[0]),o=numOrNull(x[1]),h=numOrNull(x[2]),l=numOrNull(x[3]),c=numOrNull(x[4]),v=numOrNull(x[5]),ct=numOrNull(x[6]);
+  if(t==null||o==null||h==null||l==null||c==null||v==null||ct==null)return null;
+  if(t<=0||ct<=t||o<=0||h<=0||l<=0||c<=0||v<0||h<l)return null; // price/time/range sanity: a 0 price or inverted high/low would fabricate zones
+  if(o>h||o<l||c>h||c<l)return null; // containment: open/close outside the candle's own range = corrupt tick
+  const q=numOrNull(x[7]),n=numOrNull(x[8]),tb=numOrNull(x[9]);
+  if((x[7]!==undefined&&q===null)||(x[8]!==undefined&&n===null)||(x[9]!==undefined&&tb===null))return null; // present-but-corrupt tail fields: row shape untrustworthy; genuinely absent stays null (honest-unavailable downstream)
+  if(q!=null&&q<0)return null;if(n!=null&&n<0)return null; // optional but present-and-corrupt drops the row
+  if(tb!=null&&(tb<0||tb>v))return null; // taker outside [0,total] = corrupt row (same policy as the live path)
+  return {t,o,h,l,c,v,ct,q,n,tb};
+}
+function contiguous(cl){const exp=dataTF==="5m"?300000:dataTF==="15m"?900000:3600000;for(let i=0;i<cl.length;i++){if(cl[i].t%exp!==0)return false;if(i>0&&cl[i].t-cl[i-1].t!==exp)return false}return true} // every candle must sit on the selected-interval grid AND every delta must equal it exactly: rejects gaps, out-of-order, thinned, and shifted series
+function fmtVol(v){const a=Math.abs(v);return a>=1e9?(v/1e9).toFixed(2)+"B":a>=1e6?(v/1e6).toFixed(1)+"M":a>=1e3?(v/1e3).toFixed(1)+"K":v.toFixed(a<10?3:1)} // magnitude thresholds: a negative CVD must abbreviate like a positive one
+function cvdSeries(cl){let s=0;const out=[];for(const k of cl){if(!k||!Number.isFinite(k.tb)||!Number.isFinite(k.v))return null;s+=2*k.tb-k.v;out.push(s)}return out} // fail closed: no zero-substitution, incomplete data is never a plausible numeric series
+function cvdSpark(cl){
+  const d=cvdSeries(cl);if(!d)return null;const W=300,H=34,pad=3,mn=Math.min(...d,0),mx=Math.max(...d,0),y=v=>pad+(mx-v)/((mx-mn)||1)*(H-2*pad),w=W/(d.length-1||1);
+  let p="";d.forEach((v,i)=>{p+=(i?"L":"M")+(i*w).toFixed(1)+" "+y(v).toFixed(1)});
+  return {svg:`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:34px;display:block"><line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#2a3550" stroke-dasharray="2 3"/><path d="${p}" fill="none" stroke="${d[d.length-1]>=0?"#22c55e":"#ef4444"}" stroke-width="1.2"/></svg>`,last:d[d.length-1]};
+}
+function volPanel(r){
+  const win=(r.closed||[]).slice(-21); // rolling window defined FIRST, then validated
+  const complete=win.length>=5&&contiguous(win)&&win.every(k=>k&&Number.isFinite(k.tb)&&Number.isFinite(k.v));
+  let cvd="";
+  if(complete){const cs=cvdSpark(win);if(cs)cvd=`<div class="volp-cvd">Rolling CVD · last ${win.length} closed candles · Binance spot taker flow in ${r.sym} units (sign of cumulative delta, not a direction signal): <b>${cs.last>=0?"+":""}${fmtVol(cs.last)} ${r.sym}</b>${cs.svg}</div>`}
+  else if(win.length>=5){cvd=`<div class="volp-cvd">Rolling CVD unavailable - incomplete taker data or a time gap in the last ${win.length} closed candles (shown as missing, never as zero flow).</div>`}
+  return `<div class="volp"><div class="volp-live" data-lvlive="${r.sym}">Live volume: connecting to Binance stream…</div>${cvd}<div class="volp-note">Live from Binance spot only, about once a second while the page is open. Partial candle: pace = projected full-candle volume at the current rate vs the prior-20 average. Buy/sell = taker side of Binance spot trades only, an estimate, not whole-market order flow. Chart volume bars are colored by candle direction (up/down), NOT buy vs sell. Volume-at-price bars are approximate: each closed candle's volume is spread evenly across its range. The 2.5x pace alert is a heuristic threshold, not a prediction.</div></div>`;
+}
 function rowHTML(r,side){
   const d=r[side],o=d.ob,min=+$("min").value;
   const obTxt=o?`<span><span title="Order block: candle-pattern zone before a strong move (inferred)">Entry zone</span> <b>${fmt(o.bot)} – ${fmt(o.top)}</b> ${o.inside?'<span class="tag in">in zone</span>':o.through?'<span class="tag" title="Live price is beyond the far edge. The zone is dropped if the candle closes there.">price through zone</span>':`(${o.dist.toFixed(o.dist<10?1:0)}% away)`}${o.bos?' <span class="tag" title="Break of structure: the move closed beyond the most recent unbroken swing">BOS</span>':""}${o.tapped&&!o.inside?' <span class="tag" title="A closed candle traded back into the zone after the move. The zone is still valid.">retested</span>':""}</span>`:`<span>No valid zone</span>`;
   const p=d.pool,pd=p?Math.abs(p.p-r.price)/r.price*100:0;
   const lq=p?`<span>${side=="bull"?"Resistance (reference level) above":"Support (reference level) below"} <b>${fmt(p.p)}</b> (${pd.toFixed(pd<10?1:0)}%)${p.eq?" · equal ×"+p.n:" · swing"}</span>`:`<span>No nearby pool</span>`;
-  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}</div><div class="det">${spark(r,side)}${tradePlan(r,side,o)}${aiBlock(r.sym)}</div></div>`;
+  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}<span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${spark(r,side)}${volPanel(r)}${tradePlan(r,side,o)}${aiBlock(r.sym)}</div></div>`;
 }
 // Distance is 0 inside, otherwise the percent gap from price to the near edge.
 function positionDistance(price,o,side){
@@ -519,13 +576,13 @@ function renderPositions(){
   for(const [side,name] of [["bull","long"],["bear","short"]]){
     const all=positionRows(side),rows=all.slice(0,share?5:6);
     $("position-"+name+"-count").textContent=rows.length<all.length?`top ${rows.length} of ${all.length}`:`${all.length} coin${all.length===1?"":"s"}`;
-    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span>Age <b>${o.age} candles</b></span></div><div class="det">${tradePlan(r,side,o)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
+    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span>Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
   }
 }
 function hostLabel(h){return h?"Binance spot via "+h.replace("https://",""):"unknown host"}
 function renderStatus(){if(!stat||!updatedAt)return;const age=Math.max(0,Math.round((Date.now()-updatedAt)/1000)),ageTxt=age<90?age+"s ago":Math.round(age/60)+" min ago";
   const tfms=dataTF==="5m"?300000:dataTF==="15m"?900000:3600000,stale=Date.now()-stat.candle>1.5*tfms;
-  $("status").textContent=`${stat.loaded} of ${stat.total} pairs loaded · ${dataTF} · ${hostLabel(usedHost)} · updated ${ageTxt} · latest candle ${new Date(stat.candle).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${stale?" (market data looks stale)":""}`}
+  $("status").textContent=`${stat.loaded} of ${stat.total} pairs loaded · ${dataTF} · ${hostLabel(usedHost)} · updated ${ageTxt} · latest candle ${new Date(stat.candle).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${stale?" (market data looks stale)":""}${typeof LV!=="undefined"?(LV.live?" · LIVE volume stream":(LV.on?" · live volume connecting":(LV.retry?" · live volume reconnecting":""))):""}`}
 setInterval(renderStatus,5000);
 function renderSource(){if(updatedAt)$("src").textContent=`Source: ${hostLabel(usedHost)} · ${dataTF} · ${updatedAt.toLocaleString()}`}
 function render(){
@@ -543,7 +600,7 @@ const ALERT_KEY="ob-scanner-alerts-v1";
 let alertLog=[],seen=new Set(),zoneState=new Map(),positionState=new Map(),audio=null,alertBatch=[];
 const alertOptions=["position","zone","sweep","volume","move","sound","browser"];
 function saveAlerts(){try{localStorage.setItem(ALERT_KEY,JSON.stringify({log:alertLog,seen:[...seen].slice(-2000),options:Object.fromEntries(alertOptions.map(k=>[k,$("alert-"+k).checked]))}))}catch(e){$("notify-status").textContent="Browser storage unavailable: alert history and dedupe last only for this open tab."}}
-function loadAlerts(){try{const a=JSON.parse(localStorage.getItem(ALERT_KEY)||"null");if(a){alertLog=Array.isArray(a.log)?a.log.filter(x=>x&&typeof x==="object"&&Number.isFinite(x.at)&&typeof x.coin==="string"&&(x.bias==="bull"||x.bias==="bear")).slice(0,100):[];seen=new Set(Array.isArray(a.seen)?a.seen.slice(-2000):[]);for(const k of alertOptions)if(typeof a.options?.[k]==="boolean")$("alert-"+k).checked=a.options[k]}}catch(e){}}
+function loadAlerts(){try{const a=JSON.parse(localStorage.getItem(ALERT_KEY)||"null");if(a){alertLog=Array.isArray(a.log)?a.log.filter(x=>x&&typeof x==="object"&&Number.isFinite(x.at)&&typeof x.coin==="string"&&(x.bias==="bull"||x.bias==="bear"||x.bias==="vol")).slice(0,100):[];seen=new Set(Array.isArray(a.seen)?a.seen.slice(-2000):[]);for(const k of alertOptions)if(typeof a.options?.[k]==="boolean")$("alert-"+k).checked=a.options[k]}}catch(e){}}
 function renderAlerts(){
   $("alert-count").textContent=alertLog.length+" recent";
   const log=$("alert-log");log.replaceChildren();
@@ -553,10 +610,11 @@ function renderAlerts(){
     const b=document.createElement("b");b.textContent=a.coin+" · "+a.tf+" · "+a.title;
     const time=document.createElement("time");time.className="alert-time";time.dateTime=new Date(a.at).toISOString();time.textContent=new Date(a.at).toLocaleString();
     title.append(b,time);const d=document.createElement("div");d.className="alert-detail";d.textContent=a.detail+" · ";
-    const watch=document.createElement("span");watch.className="watch-"+a.bias;watch.textContent=a.bias==="bull"?"Bullish watch":"Bearish watch";d.append(watch);li.append(title,d);log.append(li);
+    const watch=document.createElement("span");watch.className="watch-"+a.bias;watch.textContent=watchLabel(a.bias);d.append(watch);li.append(title,d);log.append(li);
   }
 }
-function toastAlert(a){const box=document.createElement("div");box.className="toast";const close=document.createElement("button");close.textContent="×";close.setAttribute("aria-label","Dismiss alert");close.onclick=()=>box.remove();const b=document.createElement("b");b.textContent=a.coin+" · "+a.tf+" · "+a.title;const p=document.createElement("p");p.textContent=a.detail+" · "+(a.bias==="bull"?"Bullish watch":"Bearish watch");box.append(close,b,p);$("toasts").prepend(box);while($("toasts").children.length>3)$("toasts").lastChild.remove();setTimeout(()=>box.remove(),12000)}
+function toastAlert(a){const box=document.createElement("div");box.className="toast";const close=document.createElement("button");close.textContent="×";close.setAttribute("aria-label","Dismiss alert");close.onclick=()=>box.remove();const b=document.createElement("b");b.textContent=a.coin+" · "+a.tf+" · "+a.title;const p=document.createElement("p");p.textContent=a.detail+" · "+watchLabel(a.bias);box.append(close,b,p);$("toasts").prepend(box);while($("toasts").children.length>3)$("toasts").lastChild.remove();setTimeout(()=>box.remove(),12000)}
+function watchLabel(b){return b==="bull"?"Bullish watch":b==="vol"?"Volume watch (no direction)":"Bearish watch"}
 function emitAlert(r,frame,trigger,candleTime,title,detail,bias){
   const id=[r.sym,frame,trigger,candleTime].join("|");if(seen.has(id))return;
   seen.add(id);if(seen.size>2000)seen.delete(seen.values().next().value);if(isSilent)return; // first scan per timeframe = silent baseline
@@ -598,7 +656,7 @@ function soundAlert(){if(!$("alert-sound").checked||!audio||audio.state!=="runni
 function flushAlerts(){if(!alertBatch.length)return;renderAlerts();saveAlerts();alertBatch.slice(-3).forEach(toastAlert);soundAlert();
   if($("alert-browser").checked&&document.visibilityState==="hidden"&&"Notification" in window&&Notification.permission==="granted"){
     const a=alertBatch[0],extra=alertBatch.length-1;
-    try{const n=new Notification(a.coin+" · "+a.tf+" · "+a.title+(extra?` (+${extra} more)`:""),{body:a.detail+" · "+(a.bias==="bull"?"Bullish watch":"Bearish watch"),tag:"ob-scanner-alert-batch"});n.onclick=()=>{window.focus();n.close()}}catch(e){$("notify-status").textContent="Browser could not show a notification. In-app alerts remain active."}
+    try{const n=new Notification(a.coin+" · "+a.tf+" · "+a.title+(extra?` (+${extra} more)`:""),{body:a.detail+" · "+watchLabel(a.bias),tag:"ob-scanner-alert-batch"});n.onclick=()=>{window.focus();n.close()}}catch(e){$("notify-status").textContent="Browser could not show a notification. In-app alerts remain active."}
   }
   alertBatch=[];
 }
@@ -621,10 +679,10 @@ async function scan(){
     const top=tk.filter(x=>x.symbol.endsWith("USDT")&&!STABLE.test(x.symbol)&&!pegged(x)&&!(m=>m&&have.has(m[1]+"USDT"))(x.symbol.match(/^(.+?)(?:UP|DOWN|BULL|BEAR)USDT$/))).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,30);{const g=tk.find(x=>x.symbol==="PAXGUSDT");if(g&&!top.some(x=>x.symbol==="PAXGUSDT"))top.push(g)}
     const out=[];let i=0,failed=0;
     await Promise.all(Array.from({length:6},async()=>{while(i<top.length){const t=top[i++];try{const k=await api(`/api/v3/klines?symbol=${t.symbol}&interval=${scanTF}&limit=200`);
-      const c=k.map(x=>({t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5],ct:+x[6]}));out.push(analyse(t.symbol.replace("USDT",""),t,c))}catch(e){failed++}}}));
+      const c=k.map(parseKline).filter(Boolean); /* any malformed required field drops the candle, never a fabricated 0 */out.push(analyse(t.symbol.replace("USDT",""),t,c))}catch(e){failed++}}}));
     if(!out.length)throw new Error("no data");
     if(scanTF===tf){
-    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();if(fsState)renderFS();applyDeep();
+    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();if(fsState)renderFS();applyDeep();lvStart();lvPaint(true);
     try{isSilent=!baselined.has(scanTF);for(const r of out)checkAlerts(r,scanTF);if(isSilent)alertBatch=[];else flushAlerts();baselined.add(scanTF)}catch(e){console.error("alerts",e)}finally{isSilent=false}
     if(zoneState.size>5000)zoneState.clear();
     if(positionState.size>5000)positionState.clear();
@@ -654,7 +712,7 @@ function renderFS(){
   const el=$("fs");if(!fsState)return;const r=results.find(x=>x.sym===fsState.sym);if(!r){closeFS(true);return}
   const side=fsState.side,long=side==="bull",pc=planCore(r,side,r[side].ob),c=r.c,z=pc.zone;
   el.innerHTML=`<div class="fh"><b>${r.sym}/USDT</b><span class="${long?"long":"short"}" style="color:${long?"var(--g)":"var(--r)"}">${long?"Candidate long":"Candidate short"}</span><span>${dataTF}</span><span class="sp"></span><b>${fmt(r.price)}</b><button class="fx" aria-label="Close full-screen chart">×</button></div><div class="fc"></div><div class="fl"></div><div class="ff"><span>Live price from the last Binance candle. Levels are illustrative, not predictions.</span><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}USDT" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div>`;
-  const fc=el.querySelector(".fc"),W=Math.max(200,fc.clientWidth),H=Math.max(160,fc.clientHeight),padR=64,padT=12,padB=12;
+  const fc=el.querySelector(".fc"),W=Math.max(200,fc.clientWidth),H=Math.max(160,fc.clientHeight),padR=64,padT=12,volH=Math.max(30,Math.round(H*0.16)),padB=12+volH;
   let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
   const lv=[];
   if(z){lv.push({p:z.top,k:"zone"},{p:z.bot,k:"zone"},{p:pc.slp,k:"sl"});pc.tps.forEach((x,i)=>x&&lv.push({p:x.p,k:"tp",n:i+1}))}
@@ -662,8 +720,15 @@ function renderFS(){
   const m=(hi-lo)*0.04;lo-=m;hi+=m;
   const y=v=>padT+(hi-v)/(hi-lo||1)*(H-padT-padB),cw=(W-padR)/c.length;let s="";
   const zi=Math.max(0,Math.min(c.length-1,(z?z.idx:0)-(r.cOff||0)));
+  const vp=volProfile(c.slice(0,-1));
+  if(vp){vp.bs.forEach((v,i)=>{const bwpx=(v/vp.mx)*(W-padR)*0.16,y0=y(vp.lo+(i+1)*vp.bw),y1=y(vp.lo+i*vp.bw);if(y1<0||y0>H-padB)return;s+=`<rect x="0" y="${Math.max(0,y0)}" width="${bwpx}" height="${Math.max(1,Math.min(H-padB,y1)-Math.max(0,y0))}" fill="${i===vp.poc?"#f59e0b":"#8b95a7"}" opacity="${i===vp.poc?0.5:0.14}"/>`});
+  s+=`<line x1="0" x2="${W-padR}" y1="${y(vp.pocPrice)}" y2="${y(vp.pocPrice)}" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;}
+  s+=`<text x="4" y="11" fill="#8b95a7" font-size="10">approx volume-at-price - not real traded volume</text>`;
   if(z)s+=`<rect x="${zi*cw}" y="${y(z.top)}" width="${W-padR-zi*cw}" height="${Math.max(2,y(z.bot)-y(z.top))}" fill="${long?"#22c55e":"#ef4444"}" opacity=".22"/>`;
   c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*cw+cw/2;s+=`<line x1="${x}" x2="${x}" y1="${y(k.h)}" y2="${y(k.l)}" stroke="${col}"/><rect x="${x-cw*.32}" y="${y(Math.max(k.o,k.c))}" width="${cw*.64}" height="${Math.max(1,Math.abs(y(k.o)-y(k.c)))}" fill="${col}"/>`});
+  const vmax=Math.max(...c.map(k=>k.v))||1,vy=v=>H-12-v/vmax*volH;
+  s+=`<line x1="0" x2="${W-padR}" y1="${H-12-volH}" y2="${H-12-volH}" stroke="#2a3550" stroke-width="1"/>`;
+  c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*cw+cw/2,live=i===c.length-1;s+=`<rect x="${x-cw*.32}" y="${vy(k.v)}" width="${cw*.64}" height="${Math.max(1,H-12-vy(k.v))}" fill="${col}" opacity="${live?0.4:0.75}"/>`});
   const line=(p,col,txt,dash)=>{const yy=y(p);return `<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="1.2"${dash?` stroke-dasharray="${dash}"`:""}/><rect x="${W-padR}" y="${yy-8}" width="${padR}" height="16" fill="${col}"/><text x="${W-padR+4}" y="${yy+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(p)}</text>${txt?`<text x="4" y="${Math.max(10,yy-3)}" fill="${col}" font-size="11">${txt}</text>`:""}`};
   if(z){s+=line(z.top,long?"#22c55e":"#ef4444","Entry zone","");s+=line(z.bot,long?"#22c55e":"#ef4444","","");s+=line(pc.slp,"#f97316","Stop","5 3");pc.tps.forEach((x,i)=>{if(x&&y(x.p)>0&&y(x.p)<H)s+=line(x.p,"#60a5fa","Target "+(i+1),"4 3")})}
   s+=line(r.price,"#e5e7eb","Price","2 2");
@@ -698,4 +763,111 @@ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=
 $("install").onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$("install").hidden=true};
 window.addEventListener("appinstalled",()=>{$("install").hidden=true});
 if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{let had=!!navigator.serviceWorker.controller,rl=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had&&!rl){rl=true;location.reload()}had=true});const chk=()=>reg.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(!document.hidden)chk()});setInterval(chk,3600000)}).catch(()=>{}));
+
+// Live volume: Binance public market-data WebSocket (no key, no account, read-only).
+const LV={ws:null,on:false,live:false,data:{},t0:0,last:0,retry:0,host:0,paintT:0,rt:0,key:"",syms:new Set(),lastEv:{},firstSeen:{}};
+const LVH=["wss://data-stream.binance.vision/stream?streams=","wss://stream.binance.com:9443/stream?streams="];
+function lvStart(){
+  if(!results.length||!dataTF)return;
+  const syms=[...new Set(results.map(r=>r.sym))].map(s=>s.toLowerCase()+"usdt@kline_"+dataTF),key=dataTF+":"+syms.join(",");
+  if(LV.on&&key===LV.key)return;
+  lvStop();LV.key=key;LV.syms=new Set(syms.map(s=>s.split("@")[0].toUpperCase()));LV.data={};LV.lastEv={};LV.firstSeen={};LV.live=false;
+  try{LV.ws=new WebSocket(LVH[LV.host%LVH.length]+syms.join("/"))}catch(e){lvRetry();return}
+  LV.ws.onopen=()=>{LV.on=true;LV.t0=Date.now();LV.retry=0;lvPaint(true);renderStatus()};
+  LV.ws.onmessage=ev=>{try{lvMsg(JSON.parse(ev.data))}catch(e){}};
+  LV.ws.onclose=()=>{const was=LV.on;LV.on=false;LV.live=false;LV.ws=null;LV.key="";if(was){lvPaint(true);renderStatus()}lvRetry()};
+  LV.ws.onerror=()=>{try{LV.ws&&LV.ws.close()}catch(e){}};
+}
+// Accepts only fresh events that match the CURRENT subscription set and interval.
+// Drops wrong-interval/unknown-symbol messages, duplicates, out-of-order events and
+// future-dated candles; missing numeric fields stay null, never fake zeros.
+function lvMsg(j){
+  const E=j&&j.data&&j.data.E,k=j&&j.data&&j.data.k;
+  if(!k||typeof k.s!=="string")return false;
+  if(k.i!==dataTF||!LV.syms.has(k.s))return false;
+  if(!Number.isFinite(+k.t)||!Number.isFinite(+k.T)||+k.T<=+k.t)return false;
+  const now=Date.now();
+  if(+k.t>now+60000)return false; // future-dated candle: clock poisoning, drop
+  if(!Number.isFinite(E)||E<=0)return false; // exchange event time required: arrival time is not freshness
+  if(E>now+10000)return false; // future-dated event beyond clock-skew allowance
+  if(now-E>30000)return false; // stale payload on receipt/reconnect
+  const tfMs=dataTF==="5m"?300000:dataTF==="15m"?900000:3600000;
+  if(+k.t%tfMs!==0)return false; // candle open must align to the active interval
+  const lastE=LV.lastEv[k.s]||0;
+  if(E<=lastE)return false; // duplicate or out-of-order (equal-timestamp updates dropped by policy)
+  const prevD=LV.data[k.s];
+  if(prevD&&+k.t<prevD.t)return false; // newer event carrying an older candle must not overwrite fresher live state
+  const num=x=>(x==null||typeof x==="boolean"||String(x).trim()==="")?null:(Number.isFinite(+x)?+x:null);
+  const v=num(k.v);if(v==null||v<0)return false; // total volume required, never negative
+  const qL=num(k.q),nL=num(k.n),cL=num(k.c),oL=num(k.o);
+  if((k.q!==undefined&&qL===null)||(k.n!==undefined&&nL===null)||(k.c!==undefined&&cL===null)||(k.o!==undefined&&oL===null))return false; // present-but-unparseable is corruption, not absence: reject the whole event
+  if(qL!=null&&qL<0)return false;if(nL!=null&&nL<0)return false; // present-and-corrupt optional fields poison the whole event
+  if((cL!=null&&cL<=0)||(oL!=null&&oL<=0))return false; // a non-positive price can never be real
+  const hL=num(k.h),lL=num(k.l);
+  if((k.h!==undefined&&hL===null)||(k.l!==undefined&&lL===null))return false; // present-but-unparseable high/low must not bypass containment
+  if((hL!=null&&hL<=0)||(lL!=null&&lL<=0))return false;
+  if(hL!=null&&lL!=null&&hL<lL)return false; // structurally impossible candle
+  if(hL!=null&&lL!=null&&((oL!=null&&(oL>hL||oL<lL))||(cL!=null&&(cL>hL||cL<lL))))return false; // live OHLC containment, parity with REST parseKline
+  let tb=num(k.V);
+  if(tb!=null&&(tb<0||tb>v))return false; // taker buy present but impossible (negative or above total): the whole payload is untrustworthy
+  if(Number.isFinite(E))LV.lastEv[k.s]=E; // recorded only on acceptance: a corrupt event must not poison the stream
+  LV.last=now;LV.live=true;LV.t0=LV.t0||now;
+  LV.data[k.s]={t:+k.t,T:+k.T,v,q:qL,tb,n:nL,c:cL,o:oL,at:now};
+  const fsKey=k.s+"|"+k.t;if(!LV.firstSeen[fsKey])LV.firstSeen[fsKey]=now;
+  lvPaint();lvSpike(k);
+  return true;
+}
+function lvStop(){clearTimeout(LV.rt);if(LV.ws){try{LV.ws.onclose=null;LV.ws.onerror=null;LV.ws.close()}catch(e){}LV.ws=null}LV.on=false;LV.live=false}
+function lvRetry(){LV.retry++;if(LV.retry>4){lvPaint(true);renderStatus();return}LV.host++;clearTimeout(LV.rt);LV.rt=setTimeout(lvStart,Math.min(60000,5000*Math.pow(2,LV.retry-1)))}
+function lvElapsed(d){return Math.min(1,Math.max(0.001,(Date.now()-d.t)/((d.T-d.t)||1)))}
+function lvFresh(d){return !!(d&&Number.isFinite(d.at)&&Date.now()-d.at<=45000)} // per-symbol freshness: one active coin must not keep another coin's chip marked live
+function lvAvg20(sym){const r=results.find(x=>x.sym===sym);if(!r||!r.closed||r.closed.length<20)return null;const p=r.closed.slice(-20);if(!contiguous(p))return null; // a dropped malformed candle must not silently stretch "prior 20" across a time gap
+  if(p.some(k=>!Number.isFinite(k.v)||k.v<0))return null;return p.reduce((s,k)=>s+k.v,0)/20}
+function lvPace(sym,d){if(!d||!Number.isFinite(d.v)||d.v<0)return null;const avg=lvAvg20(sym);if(avg==null||avg<=0)return null;const el=lvElapsed(d);if(el<0.1)return null; // too early in the candle for an honest projection
+  return (d.v/el)/avg}
+function lvPaint(force){
+  const now=Date.now();if(!force&&now-LV.paintT<800)return;LV.paintT=now;
+  const delayed=LV.live&&LV.last&&now-LV.last>15000;
+  document.querySelectorAll("[data-lv]").forEach(elm=>{
+    const d=LV.data[elm.dataset.lv+"USDT"];
+    if(!LV.live||!lvFresh(d)){elm.innerHTML="";elm.classList.remove("hot");return}
+    const pace=lvPace(elm.dataset.lv,d);
+    elm.title="Projected full-candle volume at the current rate vs the prior-20 closed-candle average. Live Binance spot only; partial candle; shown after 10% of the candle has elapsed.";
+    elm.innerHTML=`<span class="lvdot"${delayed?' style="background:#f59e0b"':""}></span>vol pace <b>${pace!=null?pace.toFixed(1)+"×":"n/a"}</b>${delayed?" (delayed)":""}`;
+    elm.classList.toggle("hot",pace!=null&&pace>2.5);
+  });
+  document.querySelectorAll("[data-lvlive]").forEach(elm=>{
+    const sym=elm.dataset.lvlive,d=LV.data[sym+"USDT"];
+    if(LV.on&&!LV.live){elm.textContent="Live volume: stream connected, waiting for matching updates…";return}
+    if(!LV.on){elm.textContent=LV.retry>4?"Live volume stream unavailable on this network - chart volume bars and CVD still update on each 60s refresh.":"Live volume: connecting to Binance stream…";return}
+    if(!d){elm.textContent="Live volume: waiting for the first update…";return}
+    if(!lvFresh(d)){elm.textContent="No recent live updates for this coin (quiet tape or delayed stream) - last 60s refresh data above still applies.";return}
+    const el=lvElapsed(d),pace=lvPace(sym,d);
+    const parts=[`Live this candle${delayed?" (delayed)":""}: <b>${Number.isFinite(d.v)?fmtVol(d.v):"…"} ${sym}</b>${Number.isFinite(d.q)?` ($${fmtVol(d.q)})`:""}`];
+    if(Number.isFinite(d.n))parts.push(`${d.n.toLocaleString("en-US")} trades`);
+    if(Number.isFinite(d.tb)&&Number.isFinite(d.v)&&d.v>0){const buy=d.tb/d.v;parts.push(`taker buy <b>${(buy*100).toFixed(0)}%</b> / sell ${(100-buy*100).toFixed(0)}%`)}
+    parts.push(`candle ${Math.round(el*100)}% through`);
+    if(pace!=null)parts.push(`pace <b>${pace.toFixed(1)}×</b> prior-20 avg`);
+    else parts.push("pace n/a (early in candle or insufficient closed-candle history)");
+    elm.innerHTML=parts.join(" · ");
+  });
+}
+function lvSpike(k){
+  if(!$("alert-volume").checked||Date.now()-LV.t0<30000)return;
+  const observed=Date.now()-(LV.firstSeen[k.s+"|"+k.t]||0);if(observed<30000)return; // this candle observed live for under 30s (e.g. right after a reconnect): no pace alert yet
+  const sym=k.s.replace(/USDT$/,""),r=results.find(x=>x.sym===sym);if(!r)return;
+  const d={t:+k.t,T:+k.T,v:+k.v};if(!Number.isFinite(d.v))return;
+  const el=lvElapsed(d);if(el<0.1)return;
+  const pace=lvPace(sym,d);if(pace==null||pace<=2.5)return;
+  // Volume is activity, not direction: this alert is deliberately neutral.
+  emitAlert(r,dataTF,"vol-live",+k.t,"Live volume pace",`${pace.toFixed(1)}× prior-20 average, projected from the live partial candle (${Math.round(el*100)}% through) · Binance spot only`,"vol");
+  flushAlerts();
+}
+setInterval(()=>{
+  const now=Date.now();
+  if(LV.live&&LV.last&&now-LV.last>45000){LV.live=false;lvPaint(true);renderStatus()} // expire stale global live state
+  let purged=false;for(const s in LV.data)if(now-LV.data[s].at>120000){delete LV.data[s];purged=true} // drop long-stale per-symbol values
+  if(LV.on&&LV.last&&now-LV.last>180000){LV.data={};LV.lastEv={};LV.firstSeen={};LV.host++;lvStart()}else lvPaint(purged); // repaint immediately when values expired
+},5000);
+
 </script></body></html>
