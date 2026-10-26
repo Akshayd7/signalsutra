@@ -154,6 +154,11 @@ body>*{order:10}header{order:1}#intro{order:2}#status,#src{order:3}#positions{or
 .position-head summary,#ai-quick-note summary,#ai-desk-note summary{min-height:24px;display:flex;align-items:center}#momentum{margin:0 14px 12px}#momentum>summary{cursor:pointer;color:var(--b);font-size:13px;min-height:32px;display:flex;align-items:center}#momentum>main{padding:0;margin-top:6px;align-items:start}
 #intro{background:none;border:0;padding:0;margin:0 14px 4px}#intro>details>summary{display:inline-flex;font-size:12px}
 @media(max-width:820px){#intro{margin:0 12px 2px;padding:0}#momentum{margin:0 12px 10px}}
+.why{margin-top:4px;font-size:12px;color:var(--mut);line-height:1.5}
+.why .why-r{display:block}
+.why .why-i{display:block;color:#f59e0b}
+.mtf{padding:0 6px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--mut);white-space:nowrap}
+.mtf.ok{color:var(--b);border-color:var(--b)}
 </style></head><body>
 <header>
 <div style="display:contents" class="x"></div><h1><span class="brand"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#0b0f17"/><rect x=".75" y=".75" width="30.5" height="30.5" rx="7.5" fill="none" stroke="url(#lg)" stroke-width="1.5"/><path d="M5 18h5l3-8 5 14 3-9 2 3h4" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>SignalSutra</b></span><span class="tagline">Crypto structure scanner · top USDT pairs</span></h1>
@@ -188,7 +193,7 @@ body>*{order:10}header{order:1}#intro{order:2}#status,#src{order:3}#positions{or
 <section class="board bear"><h2>Bearish <small id="nr"></small></h2><div class="list" id="bear"></div></section>
 </main></details>
 <section id="positions" aria-labelledby="position-heading">
-<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins inside a valid zone right now. Informational only.</p><details class="pb-more"><summary>Details</summary><p>Coins where price is inside a valid order-block zone right now (one not yet closed through), so an entry is possible. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Shows up to 6 per side, newest zone first. Informational only, not a recommendation.</p></details></div>
+<div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins inside a valid zone right now. Informational only.</p><details class="pb-more"><summary>Details</summary><p>Coins where price is inside a valid order-block zone right now (one not yet closed through), so an entry is possible. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Shows up to 6 per side, newest zone first. Informational only, not a recommendation. Each card also shows why it is listed (from the same zone data the card uses) and the candle close that would void the zone. The MTF chip counts on how many of the 3 timeframes the same rules currently find price inside a same-side zone; it reuses the same Binance prices, so it is a consistency check, not independent proof.</p></details></div>
 <div class="position-grid">
 <section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="empty">Waiting for market data.</div></div></section>
 <section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="empty">Waiting for market data.</div></div></section>
@@ -589,14 +594,73 @@ function positionRows(side){
   // One nearest zone per coin and direction; prefer the newest on an equal distance.
   return results.map(r=>positionCandidates(r,side).sort((a,b)=>a.distance-b.distance||b.o.formationTime-a.o.formationTime)[0]).filter(Boolean).sort((a,b)=>a.distance-b.distance||a.o.age-b.o.age||a.r.sym.localeCompare(b.r.sym));
 }
+// WHY + INVALIDATION lines (Position Builder cards). Derived only from the zone fields the
+// card already shows and the zone rules the board already uses. Descriptive, not a signal.
+function posWhy(r,side,o){
+  const long=side==="bull",bits=[long?"Bullish order block":"Bearish order block",o.tapped?"retested":"fresh","formed "+o.age+" candle"+(o.age===1?"":"s")+" ago"];
+  if(o.bos)bits.push("move closed beyond a prior swing (BOS)");
+  const p=r[side].pool;let room="";
+  if(p&&Number.isFinite(p.p)&&Number.isFinite(r.price)&&r.price>0){const d=Math.abs(p.p-r.price)/r.price*100;room=" Nearest opposing level "+fmt(p.p)+" ("+d.toFixed(d<10?1:0)+"% away)."}
+  const inv=long?"Void if a "+dataTF+" candle closes below "+fmt(o.bot)+".":"Void if a "+dataTF+" candle closes above "+fmt(o.top)+".";
+  return `<div class="why"><span class="why-r">${esc(bits.join(" \u00b7 ")+".")}${esc(room)}</span><span class="why-i">${esc(inv)} Same rule that drops zones on the board.</span></div>`;
+}
+// MULTI-TIMEFRAME CHECK (Position Builder cards). Runs the SAME zone rules on the other two
+// timeframes. NOT an independent confirmation: every timeframe reads the same Binance spot
+// price series. "MTF n/3" counts timeframes whose live price sits inside a same-side valid
+// zone (the card's own timeframe always counts, that is why the coin is listed). A failed or
+// incomplete timeframe shows as a partial read, never as alignment. Fetched once per scan,
+// only for the listed coins (max 12 coins x 2 timeframes, concurrency 4).
+const MTF={v:{},pend:new Map(),run:0,tf:null}; // pend maps key->owning generation: an old in-flight load never blocks or clears a new one
+function mtfKey(sym,side){return sym+"|"+side}
+async function mtfLoad(sym,side){
+  const t0={priceChangePercent:0};let aligned=0,known=0;
+  for(const x of["5m","15m","1h"]){
+    if(x===dataTF){aligned++;known++;continue}
+    try{
+      const k=await api(`/api/v3/klines?symbol=${sym}USDT&interval=${x}&limit=200`);
+      const c=k.map(parseKline).filter(Boolean);if(c.length<60)continue; // too little data: timeframe stays unknown
+      const rr=analyse(sym,t0,c);
+      const zs=(rr.positionOB&&rr.positionOB[side])||[];
+      const inside=zs.some(z=>{const p=zoneProx(rr.price,z,side);return p.inside===true});
+      known++;if(inside)aligned++;
+    }catch(e){/* fetch/parse failure: timeframe stays unknown, badge degrades honestly */}
+  }
+  return {aligned,known,at:Date.now()};
+}
+function mtfText(sym,side){
+  const v=MTF.v[mtfKey(sym,side)];if(!v)return{t:"MTF \u2026",ok:false};
+  // denominator is always 3; a failed/incomplete timeframe can never look like alignment.
+  // "*" marks that one or more timeframes are unknown (partial read, explained in the tooltip).
+  if(v.known<3)return{t:`MTF ${v.aligned}/3*`,ok:false};
+  return{t:`MTF ${v.aligned}/3`,ok:v.aligned>=2};
+}
+async function mtfRefresh(){
+  if(MTF.tf!==dataTF){MTF.v={};MTF.tf=dataTF;
+    // repaint immediately: a chip from the previous timeframe must never linger on the new one
+    document.querySelectorAll("[data-mtf]").forEach(el=>{el.textContent="MTF \u2026";el.classList.remove("ok")})}
+  const my=++MTF.run,want=[],seen=new Set();
+  for(const side of["bull","bear"])for(const {r} of positionRows(side).slice(0,6)){const k=mtfKey(r.sym,side);if(!seen.has(k)){seen.add(k);want.push({sym:r.sym,side})}}
+  for(const k of Object.keys(MTF.v))if(!seen.has(k))delete MTF.v[k]; // prune coins no longer listed: bounded cache, no stale reuse
+  let i=0;await Promise.all(Array.from({length:4},async()=>{while(i<want.length){const w=want[i++];if(my!==MTF.run)return;
+    const key=mtfKey(w.sym,w.side);
+    if(MTF.pend.get(key)===my)continue; // only a load owned by THIS generation dedupes; an older in-flight load never blocks a replacement
+    MTF.pend.set(key,my);
+    try{const v=await mtfLoad(w.sym,w.side);if(my!==MTF.run)return;MTF.v[key]=v;mtfPaint(w.sym,w.side)}catch(e){}finally{if(MTF.pend.get(key)===my)MTF.pend.delete(key)}}}));
+}
+function mtfPaint(sym,side){
+  document.querySelectorAll(`[data-mtf="${mtfKey(sym,side)}"]`).forEach(el=>{
+    const m=mtfText(sym,side);el.textContent=m.t;el.classList.toggle("ok",m.ok);
+  });
+}
 function renderPositions(){
   const share=document.body.classList.contains("share");
   $("position-heading").firstChild.textContent=share?"Position zones ":"Position Builder ";$("position-tf").textContent=dataTF;
   for(const [side,name] of [["bull","long"],["bear","short"]]){
     const all=positionRows(side),rows=all.slice(0,share?5:6);
     $("position-"+name+"-count").textContent=rows.length<all.length?`top ${rows.length} of ${all.length}`:`${all.length} coin${all.length===1?"":"s"}`;
-    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span><button class="act position-chart" data-sym="${r.sym}" data-side="${side}" aria-label="Open ${r.sym} chart">Chart</button></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span class="age">Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
+    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span><button class="act position-chart" data-sym="${r.sym}" data-side="${side}" aria-label="Open ${r.sym} chart">Chart</button></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span class="age">Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span><span class="mtf" data-mtf="${r.sym}|${side}" title="Same zone rules checked on the other timeframes (5m/15m/1h). Not an independent confirmation: every timeframe reads the same Binance spot prices. * = some timeframes unavailable, partial read.">MTF \u2026</span></div>${posWhy(r,side,o)}<div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
   }
+  document.querySelectorAll("[data-mtf]").forEach(el=>{const p=el.dataset.mtf.split("|");mtfPaint(p[0],p[1])});
 }
 function hostLabel(h){return h?"Binance spot via "+h.replace("https://",""):"unknown host"}
 function renderStatus(){if(!stat||!updatedAt)return;const age=Math.max(0,Math.round((Date.now()-updatedAt)/1000)),ageTxt=age<90?age+"s ago":Math.round(age/60)+" min ago";
@@ -701,7 +765,7 @@ async function scan(){
       const c=k.map(parseKline).filter(Boolean); /* any malformed required field drops the candle, never a fabricated 0 */out.push(analyse(t.symbol.replace("USDT",""),t,c))}catch(e){failed++}}}));
     if(!out.length)throw new Error("no data");
     if(scanTF===tf){
-    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();if(fsState)renderFS();applyDeep();lvStart();lvPaint(true);
+    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();if(fsState)renderFS();applyDeep();lvStart();lvPaint(true);mtfRefresh();
     try{isSilent=!baselined.has(scanTF);for(const r of out)checkAlerts(r,scanTF);if(isSilent)alertBatch=[];else flushAlerts();baselined.add(scanTF)}catch(e){console.error("alerts",e)}finally{isSilent=false}
     if(zoneState.size>5000)zoneState.clear();
     if(positionState.size>5000)positionState.clear();
