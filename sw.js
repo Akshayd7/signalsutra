@@ -1,6 +1,6 @@
 // SignalSutra service worker. Network-first for the page so a new version always wins when online;
 // cache is only the offline fallback. Cross-origin requests (Binance API) are never touched.
-const CACHE = "signalsutra-shell-v9-7-12-chart1";
+const CACHE = "signalsutra-shell-v9-7-12-p1v3";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/icon.svg"];
 self.addEventListener("install", e => {
   // cache:"reload" skips the HTTP cache so the precache is never an old copy
