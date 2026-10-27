@@ -520,8 +520,12 @@ function roleLabel(x,price){ // a broken high/low flips role; say so instead of 
   if(up&&x.k==="lo")return {...x,label:x.label.replace("swing low","old swing low (broken, now resistance)").replace("equal lows","old equal lows (now resistance)")};
   if(!up&&x.k==="hi")return {...x,label:x.label.replace("swing high","old swing high (broken, now support)").replace("equal highs","old equal highs (now support)")};
   return x}
+function planLadder(zone,long){ // fixed profit ladder from the zone middle: T1 10%, T2 5% beyond T1, T3 15% beyond T2 (underlying price move, no leverage); not chart levels
+  const mid=(zone.top+zone.bot)/2,k=long?1:-1,sg=long?"+":"-",t1=mid*(1+k*0.10),t2=t1*(1+k*0.05),t3=t2*(1+k*0.15);
+  const pc=v=>{const d=(v/mid-1)*100;return (d>=0?"+":"-")+Math.abs(d).toFixed(1).replace(/\.0$/,"")+"%"}; // total move from the zone middle
+  return [{p:t1,pct:pc(t1),label:`fixed ${sg}10% from zone middle`},{p:t2,pct:pc(t2),label:`fixed ${sg}5% beyond Target 1`},{p:t3,pct:pc(t3),label:`fixed ${sg}15% beyond Target 2`}]}
 function planPct(p,price){const d=(p-price)/price*100;const a=Math.abs(d);if(a<0.05)return "0%";return (d>=0?"+":"-")+a.toFixed(a<10?1:0)+"%"}
-function planLine(tag,x,price,cls){return x?`<div class="pl"><span>${tag}</span><b class="${cls||""}">${fmt(x.p)}</b><span style="width:auto;color:var(--mut)">${planPct(x.p,price)}</span><em>${x.label}</em></div>`:`<div class="pl"><span>${tag}</span><b class="na">n/a</b><em>not found in current structure</em></div>`}
+function planLine(tag,x,price,cls){return x?`<div class="pl"><span>${tag}</span><b class="${cls||""}">${fmt(x.p)}</b><span style="width:auto;color:var(--mut)">${x.pct||planPct(x.p,price)}</span><em>${x.label}</em></div>`:`<div class="pl"><span>${tag}</span><b class="na">n/a</b><em>not found in current structure</em></div>`}
 function tradePlan(r,side,zone){
   const price=r.price,long=side==="bull";
   if(!zone){const zs=(r.positionOB[side]||[]).map(o=>({o,d:long?Math.abs(price-o.top):Math.abs(o.bot-price)})).sort((a,b)=>a.d-b.d);if(zs.length)zone=zs[0].o}
@@ -533,11 +537,10 @@ function tradePlan(r,side,zone){
     entry=`<div class="pl"><span>Entry</span><b>${fmt(zone.bot)} – ${fmt(zone.top)}</b><em>mid ${fmt(mid)} · price ${fmt(price)} ${zone.inside?"(in zone)":"("+planPct(mid,price)+" to mid)"}</em></div>`;
     sl=`<div class="pl"><span>Stop</span><b class="sl">${fmt(slp)}</b><em>beyond zone ${long?"low":"high"} by ${fmt(buf)}</em></div>`;
     const base=long?Math.max(price,zone.top):Math.min(price,zone.bot);
-    const t=long?all.filter(x=>x.p>base).sort((a,b)=>a.p-b.p):all.filter(x=>x.p<base).sort((a,b)=>b.p-a.p);
-    tps=[t[0]||null,t[1]||null,t[2]||null].map(x=>roleLabel(x,price));
+    tps=planLadder(zone,long);
     const risk=Math.abs(mid-slp);
     const f=x=>x&&risk>0&&(long?x.p>mid:x.p<mid)?(()=>{const v=Math.abs(x.p-mid)/risk;return v>10?"10R+":v.toFixed(1)+"R"})():"n/a";
-    rr=`Target 1 ${f(tps[0])} · Target 2 ${f(tps[1])}`;
+    rr=`Target 1 ${f(tps[0])} · Target 2 ${f(tps[1])} · Target 3 ${f(tps[2])}`;
   }
   const nm=long?"Long":"Short";
   return `<div class="plan"><h4><span class="${long?"long":"short"}">Candidate ${nm.toLowerCase()} zone</span> · ${r.sym} · ${fmt(price)}</h4>${entry}${sl}
@@ -546,7 +549,7 @@ function tradePlan(r,side,zone){
 <details class="more"><summary>More levels (resistance / support)</summary><h5>Resistance above</h5>${planLine("Resist. 1",roleLabel(above[0],price),price)}${planLine("Resist. 2",roleLabel(above[1],price),price)}${planLine("Resist. 3",roleLabel(above[2],price),price)}
 <h5>Support below</h5>${planLine("Support 1",roleLabel(below[0],price),price)}${planLine("Support 2",roleLabel(below[1],price),price)}${planLine("Support 3",roleLabel(below[2],price),price)}</details>
 <button class="act plan-link" data-sym="${r.sym}" data-side="${side}">Copy link to this plan</button>
-<p class="note">Levels from past prices. Not predictions or advice.</p></div>`;
+<p class="note">Targets are fixed steps from the zone middle (10%, then 5%, then 15% more), not chart levels, and may not be reached. Resistance and support levels are from past prices. Not predictions or advice.</p></div>`;
 }
 function numOrNull(x){return (x==null||typeof x==="boolean"||String(x).trim()==="")?null:(Number.isFinite(+x)?+x:null)} // strict: missing/empty/whitespace/boolean stay null, never fabricated 0
 function parseKline(x){ // one REST kline row -> candle, or null when any required field is malformed: missing/empty/whitespace/boolean values coerce to 0 under raw +, so every required field goes through the strict parser
@@ -788,8 +791,7 @@ function planCore(r,side,zone){
   if(!zone)return {zone:null,tps:[]};
   const all=dedupe([...planLevels(r),...planZoneLevels(r,zone)]);
   const buf=Math.max(0.003*price,0.5*(r.atr||0)),slp=long?zone.bot-buf:zone.top+buf,base=long?Math.max(price,zone.top):Math.min(price,zone.bot);
-  const t=long?all.filter(x=>x.p>base).sort((a,b)=>a.p-b.p):all.filter(x=>x.p<base).sort((a,b)=>b.p-a.p);
-  return {zone,slp,tps:t.slice(0,3).map(x=>roleLabel(x,price))};
+  return {zone,slp,tps:planLadder(zone,long)};
 }
 /* Multi-day price-history levels (daily candles, closed only). Pure functions, no network. */
 const DAY=86400000,DWIN=[25,50,100,200],DLMODE="nearest"; // "repeat" = nearest level confirmed by 2+ pivots (else nearest single pivot); "nearest" = nearest level regardless of count
@@ -858,15 +860,15 @@ function renderFS(){
   const el=$("fs");if(!fsState)return;const r=results.find(x=>x.sym===fsState.sym);if(!r){closeFS(true);return}
   dlEnsure(r.sym);dlArm();
   const side=fsState.side,long=side==="bull",pc=planCore(r,side,r[side].ob),c=r.c,z=pc.zone;
-  el.innerHTML=`<div class="fh"><b>${r.sym}/USDT</b><span class="${long?"long":"short"}" style="color:${long?"var(--g)":"var(--r)"}">${long?"Candidate long":"Candidate short"}</span><span>${dataTF}</span><span class="sp"></span><b>${fmt(r.price)}</b><button class="fx" aria-label="Close full-screen chart">×</button></div><div class="fc"></div><div class="fl"></div><div class="ff"><span>Live price from the last Binance candle. Levels are illustrative, not predictions.</span><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}USDT" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div>`;
+  el.innerHTML=`<div class="fh"><b>${r.sym}/USDT</b><span class="${long?"long":"short"}" style="color:${long?"var(--g)":"var(--r)"}">${long?"Candidate long":"Candidate short"}</span><span>${dataTF}</span><span class="sp"></span><b>${fmt(r.price)}</b><button class="fx" aria-label="Close full-screen chart">×</button></div><div class="fc"></div><div class="fl"></div><div class="ff"><span>Live price from the last Binance candle. Targets are fixed % steps from the zone middle, not chart levels. Levels are illustrative, not predictions.</span><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}USDT" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div>`;
   const DB=dlBlock(r.sym,r.price);
   const f=el.querySelector(".fl");
-  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>no valid zone on this side</em></div>`)+(fsState.allLv?DB.html:"");
+  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?(x.pct?x.pct+" total · ":"")+x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>no valid zone on this side</em></div>`)+(fsState.allLv?DB.html:"");
   const fc=el.querySelector(".fc"),W=Math.max(200,fc.clientWidth),H=Math.max(160,fc.clientHeight),padR=64,padT=12,volH=Math.max(30,Math.round(H*0.16)),padB=12+volH;
   let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
   const lv=[];
   if(z){lv.push({p:z.top,k:"zone"},{p:z.bot,k:"zone"},{p:pc.slp,k:"sl"});pc.tps.forEach((x,i)=>x&&lv.push({p:x.p,k:"tp",n:i+1}))}
-  const rng=hi-lo;for(const l of lv){if(l.k==="tp"&&l.n===3&&(l.p>hi+rng||l.p<lo-rng))continue;lo=Math.min(lo,l.p);hi=Math.max(hi,l.p)}
+  const rng=hi-lo,hi0=hi,lo0=lo,tOn=x=>x&&y(x.p)>0&&y(x.p)<H-padB;/* eligibility is anchored to the ORIGINAL candle bounds (hi0/lo0), so an accepted earlier target cannot admit a later one; drawing and the footer marker share tOn, limited to the price pane */for(const l of lv){if(l.k==="tp"&&(l.p>hi0+rng||l.p<lo0-rng))continue;lo=Math.min(lo,l.p);hi=Math.max(hi,l.p)}
   DB.lines.forEach(l=>{if(fsState.allLv||l.nn.length){lo=Math.min(lo,l.p);hi=Math.max(hi,l.p)}}); // widen the price range for near levels (normal view) or for every level (All levels view); far levels never widen it
   const m=(hi-lo)*0.04;lo-=m;hi+=m;
   const y=v=>padT+(hi-v)/(hi-lo||1)*(H-padT-padB),cw=(W-padR)/c.length;let s="";
@@ -887,13 +889,14 @@ function renderFS(){
     for(let i=u.length-1;i>=0;i--){if(u[i].ly>bot-(u.length-1-i)*G)u[i].ly=bot-(u.length-1-i)*G;if(i<u.length-1&&u[i].ly>u[i+1].ly-G)u[i].ly=u[i+1].ly-G}
     for(let i=0;i<u.length;i++){if(i&&u[i].ly<u[i-1].ly+G)u[i].ly=u[i-1].ly+G;LY.set(pk(u[i].p),u[i].ly)}}
   const lt=[],drawn=new Set(),line=(p,col,txt,dash)=>{const yy=y(p),ly=ly0(p),dup=fsState.allLv&&drawn.has(pk(p));drawn.add(pk(p));return `<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="1.2"${dash?` stroke-dasharray="${dash}"`:""}/>${ly!==yy?`<polyline points="${W-padR-8},${yy} ${W-padR},${ly}" fill="none" stroke="${col}" stroke-width="1"/>`:""}${dup?"":`<rect x="${W-padR}" y="${ly-8}" width="${padR}" height="16" fill="${col}"/><text x="${W-padR+4}" y="${ly+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(p)}</text>`}${(()=>{if(!txt||fsState.allLv)return "";const ty=Math.max(23,yy-3);if(lt.some(o=>Math.abs(o-ty)<13))return "";lt.push(ty);return `<text x="4" y="${ty}" fill="${col}" font-size="11">${txt}</text>`})()}`};
-  if(z){s+=line(z.top,long?"#22c55e":"#ef4444","Entry zone","");s+=line(z.bot,long?"#22c55e":"#ef4444","","");s+=line(pc.slp,"#f97316","Stop","5 3");pc.tps.forEach((x,i)=>{if(x&&y(x.p)>0&&y(x.p)<H)s+=line(x.p,"#60a5fa","Target "+(i+1),"4 3")})}
+  if(z){s+=line(z.top,long?"#22c55e":"#ef4444","Entry zone","");s+=line(z.bot,long?"#22c55e":"#ef4444","","");s+=line(pc.slp,"#f97316","Stop","5 3");pc.tps.forEach((x,i)=>{if(tOn(x))s+=line(x.p,"#60a5fa","Target "+(i+1),"4 3")})}
   {const occ=[];if(z){occ.push(y(z.top),y(z.bot),y(pc.slp));pc.tps.forEach(x=>{if(x)occ.push(y(x.p))})}occ.push(y(r.price));const mine=[],pp=new Set(occ.length?[]:[]);if(z){[z.top,z.bot,pc.slp].forEach(v=>pp.add(Number(v).toPrecision(8)));pc.tps.forEach(x=>{if(x)pp.add(Number(x.p).toPrecision(8))})}pp.add(Number(r.price).toPrecision(8));
     const RW=[];DB.lines.filter(l=>l.p>lo&&l.p<hi&&(fsState.allLv||l.nn.length)).sort((a,b)=>Math.abs(a.p-r.price)-Math.abs(b.p-r.price)).forEach(l=>{const yy=y(l.p),busy=pp.has(Number(l.p).toPrecision(8)),ly=ly0(l.p),conn=ly!==yy?`<polyline points="${W-padR-8},${yy} ${W-padR},${ly}" fill="none" stroke="#a78bfa" stroke-width="1"/>`:"";s+=`<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="1 4"/>`;
       if(!busy){s+=conn+`<rect x="${W-padR}" y="${ly-8}" width="${padR}" height="16" fill="#a78bfa"/><text x="${W-padR+4}" y="${ly+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(l.p)}</text>`;mine.push(yy)}(fsState.allLv?l.ns:l.nn).forEach(n=>RW.push({yy,p:l.p,t:n+"d "+(l.sd==="S"?"support":"resistance"),sd:l.sd}))});
     {const ax=fsState.allLv?14:4,multi=new Set(RW.map(o=>o.yy)).size>1;if(multi)RW.forEach(o=>{o.t+=" "+fmt(o.p)});RW.sort((a,b)=>a.yy-b.yy||(a.sd===b.sd?0:a.sd==="R"?-1:1));const gp=14,top=12,bot=H-4;RW.forEach((o,k)=>{o.y=Math.max(top,o.yy);if(k&&o.y<RW[k-1].y+gp)o.y=RW[k-1].y+gp});for(let k=RW.length-1;k>=0;k--){const q=RW[k],lim=bot-(RW.length-1-k)*gp;if(q.y>lim)q.y=lim}RW.forEach(o=>{if(Math.abs(o.y-o.yy)>3)s+=`<polyline points="${W-padR-2},${o.yy} ${W-padR-2},${o.y}" fill="none" stroke="#a78bfa" stroke-width="1"/>`;s+=`<text x="${W-padR-ax}" y="${o.y+3}" text-anchor="end" fill="#a78bfa" stroke="#0b0f17" stroke-width="3" paint-order="stroke" font-size="10">${o.t}</text>`})}}
   s+=line(r.price,"#e5e7eb","Price","2 2");
   fc.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${r.sym} candle chart with entry, stop and target levels">${s}</svg>`;
+  if(z)pc.tps.forEach((x,i)=>{if(x&&!tOn(x)){const e=f.querySelectorAll(".pl")[2+i],em=e&&e.querySelector("em");if(em)em.textContent+=" · beyond chart scale"}}); // fixed targets can be far outside the candle range: listed here, not drawn, so they do not flatten the candles
   if(!fsState.allLv){fc.insertAdjacentHTML("beforeend",DB.chip+(fsState.sheet?`<div class="fl dlsh">${DB.sheet}</div>`:""))}
 
 }
