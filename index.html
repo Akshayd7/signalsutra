@@ -51,11 +51,12 @@ svg{width:100%;height:170px;display:block;background:#0e1420;border-radius:6px}
 .ch{cursor:zoom-in}.chb{position:absolute;right:6px;top:6px;font-size:11px;color:var(--tx);background:#1b2538;border:1px solid var(--line);border-radius:4px;padding:2px 7px;pointer-events:none}
 #fs{position:fixed;inset:0;z-index:100;background:#0b0f17;display:none;flex-direction:column}#fs.on{display:flex}body.fso{overflow:hidden}
 #fs .fh{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);flex:none}#fs .fh b{font-size:16px}#fs .fh span{color:var(--mut);font-size:12px}#fs .fh .sp{flex:1}
+@media(max-width:360px){#fs .fh{gap:6px;padding:8px}#fs .fh b{font-size:14px}#fs .fh>span:nth-of-type(2){display:none}#fs .fx{min-width:40px}}
 #fs .fx{min-width:44px;min-height:44px;font-size:22px;line-height:1;background:#1b2538;color:var(--tx);border:1px solid var(--line);border-radius:8px;cursor:pointer}
-#fs .fc{flex:1;min-height:180px;position:relative}#fs .fc svg{position:absolute;inset:0;width:100%;height:100%;border-radius:0;background:#0e1420}
+#fs .fc{flex:1;min-height:180px;position:relative}#fs .dlchip{position:absolute;right:3px;bottom:10px;width:58px;height:24px;padding:0;font-size:10px;line-height:12px;background:#1b2538;color:var(--tx);border:1px solid var(--line);border-radius:6px;cursor:pointer;z-index:3}#fs .dlchip.nr{color:#f59e0b;border-color:#f59e0b}#fs .fl.dlsh{position:absolute;left:0;right:0;bottom:0;max-height:80%;background:#0b0f17;z-index:4;overflow:auto}#fs .fl.dlsh .dl>span.dlnf{width:auto;flex:1;min-width:0}#fs .dlsh .dlnf{color:#f59e0b;font-weight:600;font-size:11px}#fs .dlsh .dlclose{margin-left:8px;background:#1b2538;color:var(--tx);border:1px solid var(--line);border-radius:6px;min-width:28px;min-height:22px;cursor:pointer}#fs .fc svg{position:absolute;inset:0;width:100%;height:100%;border-radius:0;background:#0e1420}
 #fs .fl{flex:none;max-height:38vh;overflow:auto;padding:6px 12px;border-top:1px solid var(--line);font-size:12px}
-#fs .fl .pl{display:flex;gap:8px;padding:3px 0;align-items:baseline}#fs .fl .pl>span:first-child{width:64px;color:var(--mut);flex:none}#fs .fl .pl b{font-weight:600}#fs .fl .pl em{font-style:normal;color:var(--mut)}
-#fs .ff{flex:none;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 12px 10px;font-size:11px;color:var(--mut)}#fs .ff a{color:var(--b)}
+#fs .fl .pl{display:flex;gap:8px;padding:3px 0;align-items:baseline}#fs .fl .pl>span:first-child{width:64px;color:var(--mut);flex:none}#fs .fl .pl b{font-weight:600}#fs .fl .dlall{margin-left:auto;background:#1b2538;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:11px;min-height:22px;line-height:18px;cursor:pointer}#fs .fl .dlx>summary{cursor:pointer;list-style:revert;align-items:center;flex-wrap:nowrap;gap:6px;padding:1px 0;min-height:22px}#fs .fl .dln{color:#f59e0b;font-weight:600;flex:1;min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#fs .fl .dlx>summary>b{flex:none}#fs .fl .dl{flex-wrap:wrap}#fs .fl .dl>span:first-child{width:40px}#fs .fl .pl em{font-style:normal;color:var(--mut)}
+#fs .ff{flex:none;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 12px 10px;font-size:11px;color:var(--mut)}#fs .ff a{color:var(--b);white-space:nowrap;flex:none}
 .empty{padding:20px;color:var(--mut);text-align:center}
 footer .soc{margin-top:8px}footer .soc a{color:var(--b);display:inline-block;padding:6px 4px;min-height:32px}footer{padding:10px 14px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);text-align:center}
 
@@ -790,41 +791,117 @@ function planCore(r,side,zone){
   const t=long?all.filter(x=>x.p>base).sort((a,b)=>a.p-b.p):all.filter(x=>x.p<base).sort((a,b)=>b.p-a.p);
   return {zone,slp,tps:t.slice(0,3).map(x=>roleLabel(x,price))};
 }
+/* Multi-day price-history levels (daily candles, closed only). Pure functions, no network. */
+const DAY=86400000,DWIN=[25,50,100,200],DLMODE="nearest"; // "repeat" = nearest level confirmed by 2+ pivots (else nearest single pivot); "nearest" = nearest level regardless of count
+function dlCloseClean(cs,nowMs){ // keep candles whose close time has passed (never the forming one), sorted, unique open times
+  const seen=new Set(),out=[];for(const k of cs){if(!k||k.ct>=nowMs||seen.has(k.t)||k.ct!==k.t+DAY-1)continue; // closed only; a 1d candle must span exactly 24h (close = open + 24h - 1ms), anything else is malformed and dropped
+    seen.add(k.t);out.push(k)}return out.sort((a,b)=>a.t-b.t)}
+function dlFresh(c,nowMs){const t=Math.floor(nowMs/DAY)*DAY-DAY;return c.length>0&&c[c.length-1].t===t} // newest closed candle must be YESTERDAY (UTC); count/continuity never prove currency
+function dlWindow(c,n){ // last n closed days; real continuity: consecutive 1d opens exactly 24h apart (UTC)
+  if(c.length<n)return {ok:false,have:c.length};const w=c.slice(-n);
+  if(w.some(k=>k.t%DAY!==0))return {ok:false,have:c.length,gap:true}; // must sit on the UTC midnight grid
+  for(let i=1;i<w.length;i++)if(w[i].t-w[i-1].t!==DAY)return {ok:false,have:c.length,gap:true};
+  return {ok:true,w}}
+function dlAtr(w,n=14){let s=0,m=0;const a=w.slice(-n-1);for(let i=1;i<a.length;i++){s+=Math.max(a[i].h-a[i].l,Math.abs(a[i].h-a[i-1].c),Math.abs(a[i].l-a[i-1].c));m++}return m?s/m:0}
+function dlTol(w,price){const raw=dlAtr(w)*0.5/price;return Math.min(0.015,Math.max(0.003,raw))} // fraction of price; floor 0.3%, cap 1.5%
+function dlPivots(w,k=3){const hi=[],lo=[];for(let i=k;i<w.length-k;i++){let H=true,L=true;for(let j=1;j<=k;j++){if(w[i].h<=w[i-j].h||w[i].h<=w[i+j].h)H=false;if(w[i].l>=w[i-j].l||w[i].l>=w[i+j].l)L=false}if(H)hi.push(w[i].h);if(L)lo.push(w[i].l)}return{hi,lo}}
+function dlCluster(ps,tolFrac){const s=ps.slice().sort((a,b)=>a-b),cl=[];for(const p of s){const c=cl[cl.length-1];if(c&&(p-c[0])/p<=tolFrac)c.push(p);else cl.push([p])}return cl.map(c=>({p:c.reduce((a,b)=>a+b,0)/c.length,n:c.length}))}
+function dlPick(cl,price,side,mode){const o=cl.filter(c=>side==="S"?c.p<price:c.p>price);if(!o.length)return null;
+  const d=c=>Math.abs(c.p-price);
+  if(mode==="strong")return o.slice().sort((a,b)=>b.n-a.n||d(a)-d(b))[0];
+  if(mode==="nearest")return o.slice().sort((a,b)=>d(a)-d(b))[0];
+  const m2=o.filter(c=>c.n>=2),pool=m2.length?m2:o;return pool.slice().sort((a,b)=>d(a)-d(b))[0]} // nearest, preferring levels formed by 2+ confirmed pivots (pivots overlap in time, so this is not independent evidence)
+function dlLevels(closed,price,mode=DLMODE){ // cached candles in, recomputed against live price every call
+  return DWIN.map(n=>{const W=dlWindow(closed,n);if(!W.ok)return {n,status:"short",have:W.have,gap:!!W.gap};
+    const tol=dlTol(W.w,price),pv=dlPivots(W.w);
+    const S=dlPick(dlCluster(pv.lo,tol),price,"S",mode),R=dlPick(dlCluster(pv.hi,tol),price,"R",mode);
+    const near=x=>x&&Math.abs(x.p-price)/price<=tol;
+    return {n,status:"ok",tol,S,R,nearS:near(S),nearR:near(R)}})}
+function dlNote(L){const t=[];for(const x of L){if(x.status!=="ok")continue;if(x.nearS)t.push(`${x.n}d support${x.S.n<2?" (1 pivot, weak)":""}`);if(x.nearR)t.push(`${x.n}d resistance${x.R.n<2?" (1 pivot, weak)":""}`)}return t}
+if(typeof module!=="undefined")module.exports={dlFresh,dlCloseClean,dlWindow,dlLevels,dlNote,dlPivots,dlCluster,dlTol,DWIN,DAY};
+
+const DL={c:{},pend:{},fail:{},tries:{}}; // daily-candle cache per coin: closed candles only, valid for one UTC day; levels are recomputed against live price on every render
+const dlDay=ms=>new Date(ms).toISOString().slice(0,10);
+async function dlEnsure(sym){
+  const now=Date.now(),e=DL.c[sym];if(e&&e.day===dlDay(now)&&dlFresh(e.closed,now))return;
+  if(DL.pend[sym]||(DL.fail[sym]&&(now-DL.fail[sym]<60000||(DL.tries[sym]||0)>=3)))return;
+  DL.pend[sym]=1;
+  try{const k=await api(`/api/v3/klines?symbol=${sym}USDT&interval=1d&limit=202`);const n2=Date.now();
+    DL.c[sym]={day:dlDay(n2),closed:dlCloseClean(k.map(parseKline).filter(Boolean),n2)};if(dlFresh(DL.c[sym].closed,n2)){delete DL.fail[sym];delete DL.tries[sym]}else{DL.fail[sym]=Date.now();DL.tries[sym]=(DL.tries[sym]||0)+1}} // HTTP 200 with a stale tail counts as a failure: retried after the cooldown, never shown
+  catch(err){DL.fail[sym]=Date.now();DL.tries[sym]=(DL.tries[sym]||0)+1}
+  finally{delete DL.pend[sym]}
+  if(fsState&&fsState.sym===sym)renderFS();
+}
+let dlTimer=null;
+function dlArm(){clearTimeout(dlTimer);dlTimer=null;if(!fsState)return;const now=Date.now(),nxt=Math.floor(now/DAY)*DAY+DAY+2000;let ms=nxt-now;const sym=fsState.sym;
+  if(DL.fail[sym]&&(DL.tries[sym]||0)<3)ms=Math.min(ms,61000); // a few bounded retries after a failed or stale load, then stop until the chart is reopened
+  dlTimer=setTimeout(()=>{dlTimer=null;if(fsState)renderFS()},ms)}
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.classList&&d.classList.contains("dlx")&&fsState)fsState.dlOpen=d.open},true);
+function dlResume(){if(fsState)renderFS()}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)dlResume()});window.addEventListener("pageshow",dlResume);window.addEventListener("focus",dlResume);
+function dlBlock(sym,price){
+  const e0=DL.c[sym],e=e0&&dlFresh(e0.closed,Date.now())?e0:null;
+  if(!e){const dlMsg=`<div class="pl dl"><span>Days</span><em>${DL.pend[sym]||!DL.fail[sym]?"Multi-day levels loading\u2026":e0?"Multi-day levels unavailable right now (daily data is not current, so older levels are not shown).":"Multi-day levels unavailable right now (daily data did not load)."}</em></div>`;return {html:(fsState&&fsState.allLv?`<div class="pl dl"><b>Multi-day levels</b><button class="dlall" type="button">Normal view</button></div>`:"")+dlMsg,lines:[],chip:`<button class="dlchip" type="button" aria-label="Multi-day levels status">Levels</button>`,sheet:`<div class="pl dl"><b>Multi-day levels</b><button class="dlclose" type="button" aria-label="Close levels">\u00d7</button></div>`+dlMsg};}
+  const L=dlLevels(e.closed,price),near=dlNote(L),lines=[];
+  const by=new Map();
+  for(const x of L){if(x.status!=="ok")continue;for(const sd of["S","R"]){const v=x[sd];if(!v)continue;const key=sd+v.p.toPrecision(8);if(!by.has(key))by.set(key,{p:v.p,sd,ns:[],n:v.n});by.get(key).ns.push(x.n)}}
+  by.forEach(v=>lines.push({p:v.p,txt:v.ns.join("+")+"d "+(v.sd==="S"?"support":"resistance")}));
+  const cell=(v,nr)=>v?`${nr?"<b style=\"color:#f59e0b\">":"<b>"}${fmt(v.p)}</b> <em>${v.n>=2?v.n+" pivots":"1 pivot, weak"}</em>`:`<em>none on this side</em>`;
+  const rows=L.map(x=>x.status!=="ok"?`<div class="pl dl"><span>${x.n}d</span><em>${x.gap?"daily data has gaps":"needs "+x.n+" closed days, has "+x.have}</em></div>`
+    :`<div class="pl dl"><span>${x.n}d</span><span>Support ${cell(x.S,x.nearS)}</span></div><div class="pl dl"><span></span><span>Resistance ${cell(x.R,x.nearR)}</span></div>`).join("");
+  const note=near.length?`<span class="dln" title="${near.join(", ")}">Near ${near.map(x=>(/weak\)/.test(x)?"weak ":"")+String(x).replace(/\s*\(.*$/,"")).join(", ")}</span>`:"";
+  const dlBtn=lines.length?`<button class="dlall" type="button">${fsState&&fsState.allLv?"Normal view":"All levels"}</button>`:"";const dlSheet=`<div class="pl dl"><b>Multi-day levels</b>${dlBtn}<button class="dlclose" type="button" aria-label="Close levels">\u00d7</button></div>${near.length?`<div class="pl dl"><span class="dlnf">Near ${near.join(", ")}</span></div>`:""}${rows}<div class="pl dl"><em>${DLMODE==="nearest"?"How levels are picked, per window: confirmed swing lows below price (supports) and swing highs above price (resistances), nearby ones grouped. The level closest to price is shown, even if only one pivot formed it (marked weak).":"How levels are picked, per window: confirmed swing lows below price (supports) and swing highs above price (resistances), nearby ones grouped. The closest level formed by 2+ pivots is shown. A nearer level formed by one pivot is NOT shown while a 2+ pivot one exists; if none has 2+, the nearest single-pivot level is shown as weak."} A pivot needs 3 later closed days to confirm, and windows overlap, so pivots are not independent evidence. Grouping and "near" use one distance: 0.5 x the average true range of the last 14 daily candles (simple mean, gaps included), kept between 0.3% and 1.5% of price. That is a rule of thumb, not a statistic. Closed daily candles (UTC). Past reaction levels, not predictions.</em></div>`;const dlChip=`<button class="dlchip${near.length?" nr":""}" type="button" aria-label="Multi-day levels: ${near.length?"near "+near.join(", "):"open details"}">${near.length?(near.some(x=>/weak\)/.test(x))?"Near weak":"Near"):"Levels"}</button>`;
+  return {html:`<details class="dlx"${fsState&&fsState.dlOpen?" open":""}><summary class="pl dl"><b>Multi-day levels</b>${note}${lines.length?`<button class="dlall" type="button">${fsState&&fsState.allLv?"Normal view":"All levels"}</button>`:""}</summary>${rows}<div class="pl dl"><em>${DLMODE==="nearest"?"How levels are picked, per window: confirmed swing lows below price (supports) and swing highs above price (resistances), nearby ones grouped. The level closest to price is shown, even if only one pivot formed it (marked weak).":"How levels are picked, per window: confirmed swing lows below price (supports) and swing highs above price (resistances), nearby ones grouped. The closest level formed by 2+ pivots is shown. A nearer level formed by one pivot is NOT shown while a 2+ pivot one exists; if none has 2+, the nearest single-pivot level is shown as weak."} A pivot needs 3 later closed days to confirm, and windows overlap, so pivots are not independent evidence. Grouping and "near" use one distance: 0.5 x the average true range of the last 14 daily candles (simple mean, gaps included), kept between 0.3% and 1.5% of price. That is a rule of thumb, not a statistic. Closed daily candles (UTC). Past reaction levels, not predictions.</em></div></details>${fsState&&fsState.allLv?`<div class="pl dl"><em>All-levels view: the shaded bars at the left edge of the chart are approximate volume-at-price, not real traded volume. Box colors match the list: green entry zone, orange stop, blue targets, white price, purple multi-day levels.</em></div>`:""}`,lines,chip:dlChip,sheet:dlSheet};
+}
 let fsState=null;
 function renderFS(){
   const el=$("fs");if(!fsState)return;const r=results.find(x=>x.sym===fsState.sym);if(!r){closeFS(true);return}
+  dlEnsure(r.sym);dlArm();
   const side=fsState.side,long=side==="bull",pc=planCore(r,side,r[side].ob),c=r.c,z=pc.zone;
   el.innerHTML=`<div class="fh"><b>${r.sym}/USDT</b><span class="${long?"long":"short"}" style="color:${long?"var(--g)":"var(--r)"}">${long?"Candidate long":"Candidate short"}</span><span>${dataTF}</span><span class="sp"></span><b>${fmt(r.price)}</b><button class="fx" aria-label="Close full-screen chart">×</button></div><div class="fc"></div><div class="fl"></div><div class="ff"><span>Live price from the last Binance candle. Levels are illustrative, not predictions.</span><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}USDT" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div>`;
+  const DB=dlBlock(r.sym,r.price);
+  const f=el.querySelector(".fl");
+  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>no valid zone on this side</em></div>`)+(fsState.allLv?DB.html:"");
   const fc=el.querySelector(".fc"),W=Math.max(200,fc.clientWidth),H=Math.max(160,fc.clientHeight),padR=64,padT=12,volH=Math.max(30,Math.round(H*0.16)),padB=12+volH;
   let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
   const lv=[];
   if(z){lv.push({p:z.top,k:"zone"},{p:z.bot,k:"zone"},{p:pc.slp,k:"sl"});pc.tps.forEach((x,i)=>x&&lv.push({p:x.p,k:"tp",n:i+1}))}
   const rng=hi-lo;for(const l of lv){if(l.k==="tp"&&l.n===3&&(l.p>hi+rng||l.p<lo-rng))continue;lo=Math.min(lo,l.p);hi=Math.max(hi,l.p)}
+  if(fsState.allLv)DB.lines.forEach(l=>{lo=Math.min(lo,l.p);hi=Math.max(hi,l.p)}); // optional view: widen the price range so every multi-day level is plotted
   const m=(hi-lo)*0.04;lo-=m;hi+=m;
   const y=v=>padT+(hi-v)/(hi-lo||1)*(H-padT-padB),cw=(W-padR)/c.length;let s="";
   const zi=Math.max(0,Math.min(c.length-1,(z?z.idx:0)-(r.cOff||0)));
   const vp=volProfile(c.slice(0,-1));
   if(vp){vp.bs.forEach((v,i)=>{const bwpx=(v/vp.mx)*(W-padR)*0.16,y0=y(vp.lo+(i+1)*vp.bw),y1=y(vp.lo+i*vp.bw);if(y1<0||y0>H-padB)return;s+=`<rect x="0" y="${Math.max(0,y0)}" width="${bwpx}" height="${Math.max(1,Math.min(H-padB,y1)-Math.max(0,y0))}" fill="${i===vp.poc?"#f59e0b":"#8b95a7"}" opacity="${i===vp.poc?0.5:0.14}"/>`});
   s+=`<line x1="0" x2="${W-padR}" y1="${y(vp.pocPrice)}" y2="${y(vp.pocPrice)}" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;}
-  s+=`<text x="4" y="11" fill="#8b95a7" font-size="10">approx volume-at-price - not real traded volume</text>`;
+  if(!fsState.allLv)s+=`<text x="4" y="11" fill="#8b95a7" font-size="10">approx volume-at-price - not real traded volume</text>`;
   if(z)s+=`<rect x="${zi*cw}" y="${y(z.top)}" width="${W-padR-zi*cw}" height="${Math.max(2,y(z.bot)-y(z.top))}" fill="${long?"#22c55e":"#ef4444"}" opacity=".22"/>`;
   c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*cw+cw/2;s+=`<line x1="${x}" x2="${x}" y1="${y(k.h)}" y2="${y(k.l)}" stroke="${col}"/><rect x="${x-cw*.32}" y="${y(Math.max(k.o,k.c))}" width="${cw*.64}" height="${Math.max(1,Math.abs(y(k.o)-y(k.c)))}" fill="${col}"/>`});
   const vmax=Math.max(...c.map(k=>k.v))||1,vy=v=>H-12-v/vmax*volH;
   s+=`<line x1="0" x2="${W-padR}" y1="${H-12-volH}" y2="${H-12-volH}" stroke="#2a3550" stroke-width="1"/>`;
   c.forEach((k,i)=>{const up=k.c>=k.o,col=up?"#22c55e":"#ef4444",x=i*cw+cw/2,live=i===c.length-1;s+=`<rect x="${x-cw*.32}" y="${vy(k.v)}" width="${cw*.64}" height="${Math.max(1,H-12-vy(k.v))}" fill="${col}" opacity="${live?0.4:0.75}"/>`});
-  const line=(p,col,txt,dash)=>{const yy=y(p);return `<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="1.2"${dash?` stroke-dasharray="${dash}"`:""}/><rect x="${W-padR}" y="${yy-8}" width="${padR}" height="16" fill="${col}"/><text x="${W-padR+4}" y="${yy+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(p)}</text>${txt?`<text x="4" y="${Math.max(10,yy-3)}" fill="${col}" font-size="11">${txt}</text>`:""}`};
+  const LY=new Map(),pk=p=>Number(p).toPrecision(8),ly0=p=>LY.has(pk(p))?LY.get(pk(p)):y(p); // all-levels view only: label rows are spread apart so no two labels overlap; lines stay at their true price
+  {const it=[];if(z){it.push(z.top,z.bot,pc.slp);pc.tps.forEach(x=>{if(x&&y(x.p)>0&&y(x.p)<H)it.push(x.p)})}it.push(r.price);DB.lines.forEach(l=>{if(l.p>lo&&l.p<hi&&(fsState.allLv||!(z?[y(z.top),y(z.bot),y(pc.slp),y(r.price)].concat(pc.tps.map(x=>x?y(x.p):1e9)):[y(r.price)]).some(o=>Math.abs(o-y(l.p))<17)))it.push(l.p)});
+    const u=[...new Map(it.map(p=>[pk(p),p])).values()].sort((a,b)=>b-a).map(p=>({p,y:y(p),ly:y(p)})),G=17,top=padT+9,bot=H-padB-9;
+    for(let i=0;i<u.length;i++){u[i].ly=Math.max(u[i].y,top);if(i&&u[i].ly<u[i-1].ly+G)u[i].ly=u[i-1].ly+G}
+    for(let i=u.length-1;i>=0;i--){if(u[i].ly>bot-(u.length-1-i)*G)u[i].ly=bot-(u.length-1-i)*G;if(i<u.length-1&&u[i].ly>u[i+1].ly-G)u[i].ly=u[i+1].ly-G}
+    for(let i=0;i<u.length;i++){if(i&&u[i].ly<u[i-1].ly+G)u[i].ly=u[i-1].ly+G;LY.set(pk(u[i].p),u[i].ly)}}
+  const lt=[],drawn=new Set(),line=(p,col,txt,dash)=>{const yy=y(p),ly=ly0(p),dup=fsState.allLv&&drawn.has(pk(p));drawn.add(pk(p));return `<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="1.2"${dash?` stroke-dasharray="${dash}"`:""}/>${ly!==yy?`<polyline points="${W-padR-8},${yy} ${W-padR},${ly}" fill="none" stroke="${col}" stroke-width="1"/>`:""}${dup?"":`<rect x="${W-padR}" y="${ly-8}" width="${padR}" height="16" fill="${col}"/><text x="${W-padR+4}" y="${ly+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(p)}</text>`}${(()=>{if(!txt||fsState.allLv)return "";const ty=Math.max(23,yy-3);if(lt.some(o=>Math.abs(o-ty)<13))return "";lt.push(ty);return `<text x="4" y="${ty}" fill="${col}" font-size="11">${txt}</text>`})()}`};
   if(z){s+=line(z.top,long?"#22c55e":"#ef4444","Entry zone","");s+=line(z.bot,long?"#22c55e":"#ef4444","","");s+=line(pc.slp,"#f97316","Stop","5 3");pc.tps.forEach((x,i)=>{if(x&&y(x.p)>0&&y(x.p)<H)s+=line(x.p,"#60a5fa","Target "+(i+1),"4 3")})}
+  {const occ=[];if(z){occ.push(y(z.top),y(z.bot),y(pc.slp));pc.tps.forEach(x=>{if(x)occ.push(y(x.p))})}occ.push(y(r.price));const mine=[],pp=new Set(occ.length?[]:[]);if(z){[z.top,z.bot,pc.slp].forEach(v=>pp.add(Number(v).toPrecision(8)));pc.tps.forEach(x=>{if(x)pp.add(Number(x.p).toPrecision(8))})}pp.add(Number(r.price).toPrecision(8));
+    DB.lines.filter(l=>l.p>lo&&l.p<hi).sort((a,b)=>Math.abs(a.p-r.price)-Math.abs(b.p-r.price)).forEach(l=>{const yy=y(l.p),busy=fsState.allLv?pp.has(Number(l.p).toPrecision(8)):occ.concat(mine).some(o=>Math.abs(o-yy)<17),ly=ly0(l.p),conn=ly!==yy?`<polyline points="${W-padR-8},${yy} ${W-padR},${ly}" fill="none" stroke="#a78bfa" stroke-width="1"/>`:"";s+=`<line x1="0" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="1 4"/>`;
+      if(!busy){s+=conn+`<rect x="${W-padR}" y="${ly-8}" width="${padR}" height="16" fill="#a78bfa"/><text x="${W-padR+4}" y="${ly+4}" fill="#0b0f17" font-size="10" font-weight="600">${fmt(l.p)}</text><text x="${W-padR-(fsState.allLv?14:4)}" y="${ly-3}" text-anchor="end" fill="#a78bfa" stroke="#0b0f17" stroke-width="3" paint-order="stroke" font-size="10">${l.txt}</text>`;mine.push(yy)}})}
   s+=line(r.price,"#e5e7eb","Price","2 2");
   fc.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${r.sym} candle chart with entry, stop and target levels">${s}</svg>`;
-  const f=el.querySelector(".fl");
-  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>no valid zone on this side</em></div>`);
+  if(!fsState.allLv){fc.insertAdjacentHTML("beforeend",DB.chip+(fsState.sheet?`<div class="fl dlsh">${DB.sheet}</div>`:""))}
+
 }
-function openFS(sym,side){fsState={sym,side};document.body.classList.add("fso");$("fs").classList.add("on");try{history.pushState({fs:1},"")}catch(e){}renderFS();const x=$("fs").querySelector(".fx");x&&x.focus()}
-function closeFS(fromPop){if(!fsState)return;fsState=null;$("fs").classList.remove("on");$("fs").innerHTML="";document.body.classList.remove("fso");if(!fromPop&&history.state&&history.state.fs){try{history.back()}catch(e){}}}
+function openFS(sym,side){fsState={sym,side};delete DL.tries[sym];document.body.classList.add("fso");$("fs").classList.add("on");try{history.pushState({fs:1},"")}catch(e){}renderFS();const x=$("fs").querySelector(".fx");x&&x.focus()}
+function closeFS(fromPop){if(!fsState)return;fsState=null;clearTimeout(dlTimer);dlTimer=null;$("fs").classList.remove("on");$("fs").innerHTML="";document.body.classList.remove("fso");if(!fromPop&&history.state&&history.state.fs){try{history.back()}catch(e){}}}
 window.addEventListener("popstate",()=>{if(fsState)closeFS(true)});
 window.addEventListener("resize",()=>{if(fsState)renderFS()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&fsState)closeFS()});
-document.addEventListener("click",e=>{const chartButton=e.target.closest(".position-chart");if(chartButton){e.stopPropagation();openFS(chartButton.dataset.sym,chartButton.dataset.side);return}if(e.target.closest("#fs .fx")){closeFS();return}const chEl=e.target.closest(".ch");if(chEl){const rw=chEl.closest(".row,.position-row");const mm=rw&&/(bull|bear)([A-Z0-9]+)$/.exec(rw.dataset.k);if(mm){openFS(mm[2],mm[1]);return}}const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
+document.addEventListener("click",e=>{const dc=e.target.closest("#fs .dlchip,#fs .dlclose");if(dc&&fsState){e.preventDefault();e.stopPropagation();fsState.sheet=dc.classList.contains("dlclose")?false:!fsState.sheet;renderFS();return}const da=e.target.closest(".dlall");if(da&&fsState){e.preventDefault();e.stopPropagation();fsState.allLv=!fsState.allLv;fsState.sheet=false;renderFS();return}const chartButton=e.target.closest(".position-chart");if(chartButton){e.stopPropagation();openFS(chartButton.dataset.sym,chartButton.dataset.side);return}if(e.target.closest("#fs .fx")){closeFS();return}const chEl=e.target.closest(".ch");if(chEl){const rw=chEl.closest(".row,.position-row");const mm=rw&&/(bull|bear)([A-Z0-9]+)$/.exec(rw.dataset.k);if(mm){openFS(mm[2],mm[1]);return}}const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{pl.textContent="Link copied"},()=>{window.prompt("Copy this link:",url)});return}
   if(e.target.closest(".plan"))return;const r=e.target.closest(".row,.position-row");if(r)toggleRow(r)});
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".row,.position-row")){e.preventDefault();toggleRow(e.target)}});
