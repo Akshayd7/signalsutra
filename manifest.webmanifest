@@ -1,6 +1,6 @@
 {
- "name": "SignalSutra",
- "short_name": "SignalSutra",
+ "name": "SignalSutra Guide",
+ "short_name": "SignalSutra Guide",
  "description": "Crypto structure scanner for the top Binance USDT pairs. Educational tool, not financial advice.",
  "id": "./",
  "start_url": "./",
