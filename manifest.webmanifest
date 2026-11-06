@@ -41,5 +41,21 @@
    "type": "image/svg+xml",
    "purpose": "any"
   }
+ ],
+ "screenshots": [
+  {
+   "src": "screenshots/main-412x900.png",
+   "sizes": "824x1800",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Position Builder: coins inside a valid zone, with timeframe and candle time"
+  },
+  {
+   "src": "screenshots/explain-412x900.png",
+   "sizes": "824x1800",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Plain-English explanation of a zone card"
+  }
  ]
 }
