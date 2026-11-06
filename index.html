@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SignalSutra Guide · crypto structure scanner</title>
 <meta name="description" content="SignalSutra Guide scans the top Binance USDT pairs for candle-pattern zones and price levels. Educational tool, not financial advice.">
-<meta name="theme-color" content="#0b0f17">
+<meta name="theme-color" content="#0a0e16">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -160,16 +160,161 @@ body>*{order:10}header{order:1}#intro{order:2}#status,#src{order:3}#positions{or
 .why .why-i{display:block;color:#f59e0b}
 .mtf{padding:0 6px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--mut);white-space:nowrap}
 .mtf.ok{color:var(--b);border-color:var(--b)}
+
+/* ===== Release 1 design layer: tokens, dark glass theme, mobile-first (CSS + inline SVG only) ===== */
+:root{
+--bg:#0a0e16;--card:#121a2a;--card-2:#162034;--line:#2a3651;--line-soft:#1f2a42;--tx:#e9edf4;--mut:#a7b1c3;
+--g:#34d17f;--r:#ff6f6f;--b:#7fb4ff;--amber:#f5b748;
+--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
+--t-xs:12px;--t-sm:13px;--t-md:14px;--t-lg:16px;--t-xl:20px;
+--rad:16px;--rad-md:14px;--rad-sm:12px;
+--elev:0 1px 0 rgba(255,255,255,.045) inset,0 12px 32px -16px rgba(0,0,0,.7);
+--tap:44px;--font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:clip}
+html,body{font:var(--t-md)/1.5 var(--font);font-variant-numeric:tabular-nums}
+body{background:radial-gradient(900px 480px at 0% -8%,rgba(127,180,255,.09),transparent 62%),radial-gradient(800px 420px at 100% 0%,rgba(52,209,127,.06),transparent 60%),var(--bg);overflow-x:clip}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+svg.i{width:18px;height:18px;flex:none;display:inline-block;background:none;border-radius:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+button,select{min-height:var(--tap)}
+button.act{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--tap);padding:0 var(--s3);border-radius:var(--rad-sm);background:var(--card-2);border:1px solid var(--line);color:var(--tx);font-weight:600;font-size:var(--t-sm);line-height:1.2;transition:background-color .15s,border-color .15s}
+button.act:hover{background:#1c2844;border-color:#3a4b70}
+select.act{min-height:var(--tap);padding:0 var(--s3);border-radius:var(--rad-sm);background:var(--card-2);border:1px solid var(--line);color:var(--tx);font:600 var(--t-sm)/1 var(--font)}
+button:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+summary{min-height:var(--tap);display:flex;align-items:center;gap:var(--s2);list-style:none;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";flex:none;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);margin:0 2px 0 2px;transition:transform .15s}
+details[open]>summary::before{transform:rotate(45deg)}
+a{color:var(--b)}
+/* header + sticky controls */
+header.appbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);padding:var(--s3) var(--s4);border-bottom:0}
+header.appbar h1{display:flex;flex-direction:column;min-width:0;margin-right:auto}
+.brand b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+h1 .tagline{margin:2px 0 0 38px;font-size:var(--t-xs);color:var(--mut);font-weight:400}
+.appbar-actions{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+label.toggle{min-height:var(--tap);padding:0 var(--s3);border:1px solid var(--line);border-radius:var(--rad-sm);background:var(--card-2);color:var(--tx);font-size:var(--t-sm);font-weight:600;cursor:pointer;gap:var(--s2)}
+label.toggle input{width:18px;height:18px;margin:0;accent-color:var(--b)}
+.controls{order:1;position:sticky;top:0;z-index:40;padding:var(--s2) var(--s4);background:rgba(10,14,22,.86);-webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line-soft)}
+.controls-row{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.seg{border:1px solid var(--line);border-radius:var(--rad-sm);background:var(--card);overflow:hidden}
+.seg button{min-height:var(--tap);min-width:52px;padding:0 var(--s3);background:transparent;color:var(--mut);font-weight:600;font-size:var(--t-sm)}
+.seg button+button{border-left:1px solid var(--line-soft)}
+.seg button.on{background:linear-gradient(180deg,#9cc6ff,#6aa5f7);color:#06122a}
+.seg button.loading{background:repeating-linear-gradient(135deg,#6aa5f7 0 8px,#8dbbfb 8px 16px);background-size:200% 100%;animation:tfload 1.2s linear infinite}
+@keyframes tfload{to{background-position:-45px 0}}
+label.minlbl{min-height:var(--tap);color:var(--mut);font-size:var(--t-sm);gap:var(--s2)}
+#go{margin-left:auto}
+.banner{margin-top:var(--s2);padding:var(--s2) var(--s3);border-radius:var(--rad-sm);font-size:var(--t-sm);line-height:1.4;background:rgba(127,180,255,.1);border:1px solid rgba(127,180,255,.38);color:#d6e6ff}
+.banner.warn{background:rgba(245,183,72,.1);border-color:rgba(245,183,72,.5);color:#ffdea3}
+#status{padding:var(--s2) var(--s4) 0;font-size:var(--t-xs);color:var(--mut)}
+/* data-state dimming: old cards stay visible but clearly not current */
+body.data-stale .position-list,body.data-stale #momentum .list,body.tf-loading .position-list,body.tf-loading #momentum .list{opacity:.62;filter:grayscale(.6);transition:opacity .2s}
+body.data-stale .position-top::after{content:"stale";display:inline-flex;align-items:center;min-height:24px;padding:0 var(--s2);border-radius:999px;font-size:var(--t-xs);font-weight:600;color:#ffc2c2;background:rgba(255,111,111,.12);border:1px solid rgba(255,111,111,.4)}
+/* surfaces */
+#positions,#alerts,#ai-quick,#ai-desk,#deeplink,.board{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0) 120px),var(--card);border:1px solid var(--line-soft);border-radius:var(--rad);box-shadow:var(--elev)}
+#positions,#alerts,#ai-quick,#ai-desk,#deeplink{margin:0 var(--s4) var(--s4)}
+#intro{margin:var(--s2) var(--s4) 0}
+#intro>details>summary{font-size:var(--t-sm);color:var(--b)}
+#momentum{margin:0 var(--s4) var(--s4)}
+#momentum>summary{min-height:var(--tap);padding:0 var(--s4);border:1px solid var(--line-soft);border-radius:var(--rad);background:var(--card);color:var(--b);font-weight:600;font-size:var(--t-sm)}
+#momentum>main{gap:var(--s3);margin-top:var(--s3)}
+/* Position Builder */
+.position-head{padding:var(--s4);border-bottom:1px solid var(--line-soft)}
+.position-head h2{font-size:var(--t-xl);font-weight:700;letter-spacing:-.01em;margin:0 0 var(--s1)}
+.position-head p{font-size:var(--t-sm);color:var(--mut)}
+.position-side h3{padding:var(--s3) var(--s4);font-size:var(--t-md);border-bottom:1px solid var(--line-soft)}
+.position-side+.position-side{border-left:1px solid var(--line-soft)}
+.position-list{padding:var(--s3);display:grid;gap:var(--s3);align-content:start}
+.position-row,.position-row:last-child{padding:var(--s3) var(--s4);border:1px solid var(--line-soft);border-radius:var(--rad-md);background:var(--card-2);box-shadow:0 6px 18px -14px rgba(0,0,0,.8)}
+.position-row:hover{background:#1a2541}
+.position-top{gap:var(--s2)}
+.position-top b{font-size:var(--t-lg);font-weight:700;letter-spacing:-.01em}
+.position-long,.position-short{font-size:var(--t-sm);font-weight:600}
+.position-long{color:var(--g)}.position-short{color:var(--r)}
+.position-row .meta{gap:var(--s1) var(--s4);margin-top:var(--s2);font-size:var(--t-sm)}
+.position-top .act,.ai-quick-btn{min-height:var(--tap);font-size:var(--t-xs)}
+.ai-quick-btn{display:inline-flex;align-items:center;padding:0 var(--s3);border-radius:var(--rad-sm);color:#b7d0ff;border-color:rgba(127,180,255,.55)}
+.chip,.position-state{display:inline-flex;align-items:center;min-height:24px;padding:0 var(--s2);border-radius:999px;font-size:var(--t-xs);font-weight:600;line-height:1;border:1px solid transparent}
+.chip-fresh{color:#8debb6;background:rgba(52,209,127,.12);border-color:rgba(52,209,127,.4)}
+.chip-retested{color:#ffd897;background:rgba(245,183,72,.12);border-color:rgba(245,183,72,.42)}
+.chip-in{color:#c4dbff;background:rgba(127,180,255,.12);border-color:rgba(127,180,255,.4)}
+.card-time{margin-top:6px;font-size:var(--t-xs);color:var(--mut)}
+.why{font-size:var(--t-sm)}.why .why-i{color:#ffc76b}
+.mtf{display:inline-flex;align-items:center;min-height:22px;border-radius:999px;font-size:var(--t-xs)}
+/* Explain */
+.explain-wrap{margin-top:var(--s2)}
+.explain-btn{font-size:var(--t-xs)}
+.explain{margin-top:var(--s2);padding:var(--s3);border-radius:var(--rad-sm);background:rgba(127,180,255,.07);border:1px solid rgba(127,180,255,.28);cursor:default}
+.explain-body p{margin:0 0 6px;font-size:var(--t-sm);line-height:1.55;color:var(--tx);overflow-wrap:anywhere}
+.explain-body p:last-child{margin:0;color:var(--mut);font-size:var(--t-xs)}
+.explain-body.warn{color:#ffdea3}.explain-body.warn p:first-child{color:#ffdea3;font-weight:600}
+/* board */
+.board h2{padding:var(--s3) var(--s4);font-size:var(--t-md);border-bottom:1px solid var(--line-soft)}
+.row{padding:var(--s3) var(--s4);border-bottom:1px solid var(--line-soft)}
+.row:hover{background:#18223a}
+.sym{font-weight:700}
+.px,.chg{font-size:var(--t-sm)}
+.score{border-radius:8px;font-size:var(--t-sm)}
+.meta{font-size:var(--t-sm)}
+.tag{display:inline-flex;align-items:center;min-height:20px;padding:0 6px;border-radius:999px;font-size:var(--t-xs)}
+.plan{background:#0f1626;border:1px solid var(--line-soft);border-radius:var(--rad-sm);padding:var(--s3);font-size:var(--t-sm)}
+.plan h5{font-size:var(--t-xs)}.plan .note{font-size:var(--t-xs)}
+.volp{border-color:var(--line-soft);border-radius:var(--rad-sm)}.volp .volp-note{font-size:var(--t-xs)}
+.chl,.chb{font-size:var(--t-xs)}
+.empty{padding:var(--s4);font-size:var(--t-sm);color:var(--mut);text-align:center}
+/* skeleton loaders (shown until the first scan renders) */
+.skel-card{display:grid;gap:10px;padding:var(--s3) var(--s4);border:1px solid var(--line-soft);border-radius:var(--rad-md);background:var(--card-2)}
+.list>.skel-card{margin:var(--s2) var(--s3)}
+.skel-line{height:12px;border-radius:6px;background:linear-gradient(90deg,#1c2740 0%,#283656 50%,#1c2740 100%);background-size:200% 100%;animation:skel 1.4s ease-in-out infinite}
+.skel-line.w35{width:35%;height:16px}.skel-line.w60{width:60%}.skel-line.w80{width:80%}
+@keyframes skel{0%{background-position:100% 0}100%{background-position:-100% 0}}
+/* AI + alerts + footer */
+.ai-sample,.ai-unv,.ai-quick-chip,.ai-qbanner,.ai-when,.alert-time,.lvchip{font-size:var(--t-xs)}
+.alert-head{padding:var(--s3) var(--s4)}
+footer{padding:var(--s4);font-size:var(--t-xs);color:var(--mut);border-top:1px solid var(--line-soft)}
+footer a{display:inline-flex;align-items:center;min-height:var(--tap);padding:0 6px}
+/* full-screen chart: larger tap targets */
+#fs .fh{padding:var(--s2) var(--s3);background:rgba(10,14,22,.92)}
+#fs .dlchip{height:var(--tap);width:68px;font-size:var(--t-xs);bottom:8px;border-radius:var(--rad-sm)}
+#fs .fl .dlall,#fs .dlsh .dlclose{min-height:var(--tap);min-width:var(--tap);font-size:var(--t-xs);border-radius:10px}
+#fs .fl{font-size:var(--t-sm)}#fs .fl .dln,#fs .dlsh .dlnf{font-size:var(--t-xs)}#fs .ff{font-size:var(--t-xs)}
+#fs .ff a{display:inline-flex;align-items:center;min-height:var(--tap)}
+body.share .controls-row,body.share .appbar-actions .ctl{display:none!important}
+@media(max-width:820px){
+#positions,#alerts,#ai-quick,#ai-desk,#deeplink,#momentum{margin:0 var(--s3) var(--s3)}
+#intro{margin:var(--s2) var(--s3) 0}
+header.appbar{padding:var(--s3)}.controls{padding:var(--s2) var(--s3)}#status{padding:var(--s2) var(--s3) 0}
+.position-side+.position-side{border-left:0;border-top:1px solid var(--line-soft)}
+.position-list{padding:var(--s2) var(--s3) var(--s3)}
+}
+@media(max-width:480px){
+h1 .tagline,.hide-xs{display:none}
+.appbar-actions .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.appbar-actions button.act{min-width:var(--tap);padding:0 var(--s2)}
+.seg button{min-width:48px;padding:0 var(--s2)}
+#go .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+#go{min-width:var(--tap);padding:0}
+.position-row,.position-row:last-child{padding:var(--s3)}
+}
+#intro summary,#intro details summary,#gloss summary,#method summary,.position-head summary,#ai-quick-note summary,#ai-desk-note summary,.plan .more summary,.volp-note summary,.ai-tech summary{min-height:var(--tap)}
+footer .soc a{min-height:var(--tap);min-width:var(--tap);justify-content:center;padding:0 8px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 </style></head><body>
-<header>
+<header class="appbar">
 <div style="display:contents" class="x"></div><h1><span class="brand"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#0b0f17"/><rect x=".75" y=".75" width="30.5" height="30.5" rx="7.5" fill="none" stroke="url(#lg)" stroke-width="1.5"/><path d="M5 18h5l3-8 5 14 3-9 2 3h4" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>SignalSutra Guide</b></span><span class="tagline">Crypto structure scanner · top USDT pairs</span></h1>
-<div class="seg ctl" id="tf"><button data-v="5m">5m</button><button data-v="15m">15m</button><button data-v="1h" class="on">1h</button></div>
-<label class="ctl">Min score <select id="min" class="act"><option>0</option><option>30</option><option selected>40</option><option>50</option><option>60</option></select></label>
-<label class="ctl"><input type="checkbox" id="auto" checked> auto 60s</label>
-<button class="act ctl" id="go">Refresh</button>
-<button class="act" id="install" hidden>Install app</button>
-<button class="act" id="shot">Share view</button>
+<div class="appbar-actions">
+<label class="ctl toggle" title="Refresh automatically every 60 seconds"><input type="checkbox" id="auto" checked> <span>Auto<span class="hide-xs"> 60s</span></span></label>
+<button class="act" id="install" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></svg><span class="lbl">Install app</span></button>
+<button class="act" id="shot"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></svg><span class="lbl">Share view</span></button>
+</div>
 </header>
+<nav class="controls" id="controls" aria-label="Scanner controls">
+<div class="controls-row">
+<div class="seg ctl" id="tf" role="group" aria-label="Timeframe"><button data-v="5m">5m</button><button data-v="15m">15m</button><button data-v="1h" class="on">1h</button></div>
+<label class="ctl minlbl">Min<span class="hide-xs"> score</span> <select id="min" class="act" aria-label="Minimum momentum score"><option>0</option><option>30</option><option selected>40</option><option>50</option><option>60</option></select></label>
+<button class="act ctl" id="go" aria-label="Refresh now"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg><span class="lbl">Refresh</span></button>
+</div>
+<div id="data-banner" class="banner" role="status" aria-live="polite" hidden></div>
+</nav>
 <div id="fs" role="dialog" aria-modal="true" aria-label="Full-screen chart"></div>
 <section id="intro"><details id="help"><summary>Help: what is this and how to use it</summary><p><b>What is this?</b> Shows candle-pattern zones and price levels where price previously reacted, plus current strength rankings for the top 30 Binance coins by volume, plus PAXG (gold). <b>Green</b> = recent strength, <b>red</b> = recent weakness; the number is a heuristic momentum and structure score (0-100), not a probability.</p><p><b>How to use it:</b> tap any coin to open its mechanical plan: an entry zone, a stop level, and nearby price levels (Targets, Resistance above, Support below) taken from recent candles.</p>
 <p class="method-line">Zones come from closed candles only: fresh (untouched), retested (touched, still valid), or dropped once a candle closes through them.</p>
@@ -190,14 +335,14 @@ body>*{order:10}header{order:1}#intro{order:2}#status,#src{order:3}#positions{or
 <div id="status">Loading…</div>
 <div id="src">Source: Binance spot</div>
 <details id="momentum"><summary>Momentum list (Bullish / Bearish scores)</summary><main>
-<section class="board bull"><h2>Bullish <small id="nb" title="Score = heuristic momentum score, not a probability"></small></h2><div class="list" id="bull"></div></section>
-<section class="board bear"><h2>Bearish <small id="nr"></small></h2><div class="list" id="bear"></div></section>
+<section class="board bull"><h2>Bullish <small id="nb" title="Score = heuristic momentum score, not a probability"></small></h2><div class="list" id="bull"><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div></div></section>
+<section class="board bear"><h2>Bearish <small id="nr"></small></h2><div class="list" id="bear"><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div></div></section>
 </main></details>
 <section id="positions" aria-labelledby="position-heading">
 <div class="position-head"><h2 id="position-heading">Position Builder <small id="position-tf" style="color:var(--mut);font-weight:400;font-size:12px">1h</small></h2><p>Coins inside a valid zone right now. Informational only.</p><details class="pb-more"><summary>Details</summary><p>Coins where price is inside a valid order-block zone right now (one not yet closed through), so an entry is possible. No score filter. Fresh = price has not traded back into the zone since the move; retested = it has. Zones are dropped once a candle closes beyond the far edge. Age is candles since the displacement candle. Shows up to 6 per side, newest zone first. Informational only, not a recommendation. Each card also shows why it is listed (from the same zone data the card uses) and the candle close that would void the zone. The MTF chip counts on how many of the 3 timeframes the same rules currently find price inside a same-side zone; it reuses the same Binance prices, so it is a consistency check, not independent proof.</p></details></div>
 <div class="position-grid">
-<section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="empty">Waiting for market data.</div></div></section>
-<section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="empty">Waiting for market data.</div></div></section>
+<section class="position-side"><h3 class="position-long">Long zones <small id="position-long-count"></small></h3><div class="position-list" id="position-long"><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><p class="sr-only">Loading market data…</p></div></section>
+<section class="position-side"><h3 class="position-short">Short zones <small id="position-short-count"></small></h3><div class="position-list" id="position-short"><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><div class="skel-card" aria-hidden="true"><div class="skel-line w35"></div><div class="skel-line w80"></div><div class="skel-line w60"></div></div><p class="sr-only">Loading market data…</p></div></section>
 </div></section>
 <section id="ai-quick" hidden aria-labelledby="ai-quick-heading">
 <div class="ai-head"><h2 id="ai-quick-heading">AI quick check <small id="ai-quick-meta"></small></h2></div>
@@ -226,10 +371,13 @@ body>*{order:10}header{order:1}#intro{order:2}#status,#src{order:3}#positions{or
 <ul id="alert-log" aria-label="Recent alerts"></ul>
 </section>
 <div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
-<footer>Educational tool only, not financial advice. Data: Binance public market data; may be delayed or unavailable. Trade at your own risk. Not affiliated with or endorsed by Binance.<div class="soc">BTC Father: <a href="https://x.com/BTC_Bap" target="_blank" rel="noopener noreferrer">X</a> · <a href="https://www.instagram.com/btcfatherofficial/" target="_blank" rel="noopener noreferrer">Instagram</a> · <a href="https://t.me/BTCFatherOfficial" target="_blank" rel="noopener noreferrer">Telegram</a></div></footer>
+<footer>Educational tool only, not financial advice. Data: Binance public market data; may be delayed or unavailable. Trade at your own risk. Not affiliated with or endorsed by Binance. <a href="privacy.html">Privacy policy</a><div class="soc">BTC Father: <a href="https://x.com/BTC_Bap" target="_blank" rel="noopener noreferrer">X</a> · <a href="https://www.instagram.com/btcfatherofficial/" target="_blank" rel="noopener noreferrer">Instagram</a> · <a href="https://t.me/BTCFatherOfficial" target="_blank" rel="noopener noreferrer">Telegram</a></div></footer>
 <script>
 const HOSTS=["https://data-api.binance.vision","https://api.binance.com","https://api1.binance.com"];
 let isSilent=false,baselined=new Set(),usedHost=null,stat=null,deep=null,host=null,tf="1h",timer=null,busy=false,results=[],open={},dataTF="1h",updatedAt=null;
+let scanFailed=false; // true after a failed scan until the next successful one (old cards stay, dimmed, explanations marked stale)
+// Inline SVG icons (no icon font, no CDN). Decorative: the button text carries the meaning.
+const ICON={info:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',chart:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 16V9M12 16V5M17 16v-5"/></svg>'};
 const STABLE=/^(USDC|FDUSD|TUSD|USDP|DAI|BUSD|USDE|EUR|EURI|AEUR|XUSD|USD1|PAXG|XAUT|WBTC|WBETH|BFUSD|UST|RLUSD|USDG|USDS|PYUSD|USDD|FRAX|GUSD|LUSD|SUSD|USDT0)/;
 const pegged=t=>{const l=+t.lastPrice,h=+t.highPrice,lo=+t.lowPrice;return l>0.97&&l<1.03&&(h-lo)/l<0.01}; // stablecoin-like: near $1 with under 1% daily range
 const $=id=>document.getElementById(id);
@@ -585,7 +733,7 @@ function rowHTML(r,side){
   const obTxt=o?`<span><span title="Order block: candle-pattern zone before a strong move (inferred)">Entry zone</span> <b>${fmt(o.bot)} – ${fmt(o.top)}</b> ${o.inside?'<span class="tag in">in zone</span>':o.through?'<span class="tag" title="Live price is beyond the far edge. The zone is dropped if the candle closes there.">price through zone</span>':`(${o.dist.toFixed(o.dist<10?1:0)}% away)`}${o.bos?' <span class="tag" title="Break of structure: the move closed beyond the most recent unbroken swing">BOS</span>':""}${o.tapped&&!o.inside?' <span class="tag" title="A closed candle traded back into the zone after the move. The zone is still valid.">retested</span>':""}</span>`:`<span>No valid zone</span>`;
   const p=d.pool,pd=p?Math.abs(p.p-r.price)/r.price*100:0;
   const lq=p?`<span class="lq">${side=="bull"?"Resistance (reference level) above":"Support (reference level) below"} <b>${fmt(p.p)}</b> (${pd.toFixed(pd<10?1:0)}%)${p.eq?" · equal ×"+p.n:" · swing"}</span>`:`<span class="lq">No nearby pool</span>`;
-  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}<span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${spark(r,side)}${volPanel(r)}${tradePlan(r,side,o)}${aiBlock(r.sym)}</div></div>`;
+  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div>${cardTime(r)}<div class="meta">${obTxt}${lq}<span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${spark(r,side)}${volPanel(r)}${tradePlan(r,side,o)}${explainBlock(side+r.sym,r,side,o)}${aiBlock(r.sym)}</div></div>`;
 }
 // Distance is 0 inside, otherwise the percent gap from price to the near edge.
 function positionDistance(price,o,side){
@@ -662,10 +810,38 @@ function renderPositions(){
   for(const [side,name] of [["bull","long"],["bear","short"]]){
     const all=positionRows(side),rows=all.slice(0,share?5:6);
     $("position-"+name+"-count").textContent=rows.length<all.length?`top ${rows.length} of ${all.length}`:`${all.length} coin${all.length===1?"":"s"}`;
-    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span><button class="act position-chart" data-sym="${r.sym}" data-side="${side}" aria-label="Open ${r.sym} chart">Chart</button></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span class="age">Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span><span class="mtf" data-mtf="${r.sym}|${side}" title="Same zone rules checked on the other timeframes (5m/15m/1h). Not an independent confirmation: every timeframe reads the same Binance spot prices. * = some timeframes unavailable, partial read.">MTF \u2026</span></div>${posWhy(r,side,o)}<div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
+    $("position-"+name).innerHTML=rows.length?rows.map(({r,o})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state chip ${o.tapped?"chip-retested":"chip-fresh"}">${o.tapped?"retested":"fresh"}</span><span class="position-near chip chip-in">in zone</span><button class="act position-chart" data-sym="${r.sym}" data-side="${side}" data-zt="${o.time}" data-zf="${o.formationTime}" aria-label="Open ${r.sym} chart for this zone">${ICON.chart}<span>Chart</span></button></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span class="age">Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span><span class="mtf" data-mtf="${r.sym}|${side}" title="Same zone rules checked on the other timeframes (5m/15m/1h). Not an independent confirmation: every timeframe reads the same Binance spot prices. * = some timeframes unavailable, partial read.">MTF \u2026</span></div>${cardTime(r)}${posWhy(r,side,o)}${explainBlock("pos"+side+r.sym,r,side,o)}<div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
   }
   document.querySelectorAll("[data-mtf]").forEach(el=>{const p=el.dataset.mtf.split("|");mtfPaint(p[0],p[1])});
 }
+// ---- Release 1 trust fixes (UI state only; no engine change) ----
+// Full-screen chart zone: a Position Builder card passes its own zone identity (ob candle time +
+// formation time). Board rows keep using the board's zone r[side].ob.
+function fsZone(r,side){
+  const zid=fsState&&fsState.zid;
+  if(!zid)return {zone:r[side].ob,lost:false};
+  const z=((r.positionOB&&r.positionOB[side])||[]).find(o=>o.time===zid.time&&o.formationTime===zid.formationTime)||null;
+  return {zone:z,lost:!z};
+}
+// Data-state banner: failed scan (old cards kept, dimmed), offline, or a timeframe switch still loading.
+function syncDataState(){
+  const b=document.body,have=results.length>0,loading=have&&tf!==dataTF,stale=have&&scanFailed,off=navigator.onLine===false;
+  b.classList.toggle("data-stale",stale);b.classList.toggle("tf-loading",loading&&!stale);
+  document.querySelectorAll("#tf button").forEach(x=>{const l=loading&&x.dataset.v===tf;x.classList.toggle("loading",l);if(l)x.setAttribute("aria-busy","true");else x.removeAttribute("aria-busy")});
+  const t=updatedAt?updatedAt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"unknown";
+  const retry=$("auto").checked?"Retrying automatically.":"Tap Refresh to retry.";
+  let msg="";
+  if(stale)msg=(off?"You are offline. ":"")+"Data not updating - last good data at "+t+(loading?" (still showing "+dataTF+"; "+tf+" could not load)":"")+". "+retry;
+  else if(loading)msg="Loading "+tf+" data\u2026 still showing "+dataTF+" until it arrives.";
+  else if(scanFailed)msg=(off?"You are offline. ":"Market data could not load yet. ")+retry;
+  const el=$("data-banner");if(!el)return;el.textContent=msg;el.hidden=!msg;el.classList.toggle("warn",!!scanFailed);
+}
+function showNoData(){
+  const m='<div class="empty">Market data could not load'+(navigator.onLine===false?" (you are offline)":"")+'. Nothing is shown rather than guessed.</div>';
+  for(const id of["position-long","position-short","bull","bear"]){const e=$(id);if(e)e.innerHTML=m}
+}
+window.addEventListener("online",()=>{syncDataState();if(!busy)scan()});
+window.addEventListener("offline",syncDataState);
 function hostLabel(h){return h?"Binance spot via "+h.replace("https://",""):"unknown host"}
 function renderStatus(){if(!stat||!updatedAt)return;const age=Math.max(0,Math.round((Date.now()-updatedAt)/1000)),ageTxt=age<90?age+"s ago":Math.round(age/60)+" min ago";
   const tfms=dataTF==="5m"?300000:dataTF==="15m"?900000:3600000,stale=Date.now()-stat.candle>1.5*tfms;
@@ -769,18 +945,18 @@ async function scan(){
       const c=k.map(parseKline).filter(Boolean); /* any malformed required field drops the candle, never a fabricated 0 */out.push(analyse(t.symbol.replace("USDT",""),t,c))}catch(e){failed++}}}));
     if(!out.length)throw new Error("no data");
     if(scanTF===tf){
-    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;render();if(fsState)renderFS();applyDeep();lvStart();lvPaint(true);mtfRefresh();
+    results=out;dataTF=scanTF;updatedAt=new Date();usedHost=host;scanFailed=false;syncDataState();render();if(fsState)renderFS();applyDeep();lvStart();lvPaint(true);mtfRefresh();
     try{isSilent=!baselined.has(scanTF);for(const r of out)checkAlerts(r,scanTF);if(isSilent)alertBatch=[];else flushAlerts();baselined.add(scanTF)}catch(e){console.error("alerts",e)}finally{isSilent=false}
     if(zoneState.size>5000)zoneState.clear();
     if(positionState.size>5000)positionState.clear();
     stat={loaded:out.length,total:top.length,candle:Math.max(...out.map(r=>r.liveTime))};renderStatus();
     }
-  }catch(e){$("status").textContent="Data unavailable: "+e.message+". Binance API may be blocked on this network (try another network or VPN off).";}
+  }catch(e){scanFailed=true;$("status").textContent=(navigator.onLine===false?"You are offline. ":"")+"Data unavailable: "+e.message+". Binance API may be blocked on this network (try another network or VPN off).";try{syncDataState();if(results.length)render();else showNoData()}catch(_){}}
   busy=false;if(scanTF!==tf)scan();else sched();
 }
 function sched(){clearTimeout(timer);if($("auto").checked)timer=setTimeout(scan,60000)}
-document.querySelectorAll("#tf button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tf button").forEach(x=>x.classList.remove("on"));b.classList.add("on");tf=b.dataset.v;scan()});
-$("go").onclick=scan;$("shot").onclick=()=>{const on=document.body.classList.toggle("share");$("shot").textContent=on?"Exit share view":"Share view";renderSource();render()};$("auto").onchange=sched;$("min").onchange=render;
+document.querySelectorAll("#tf button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tf button").forEach(x=>x.classList.remove("on"));b.classList.add("on");tf=b.dataset.v;syncDataState();scan()});
+$("go").onclick=scan;$("shot").onclick=()=>{const on=document.body.classList.toggle("share");$("shot").querySelector(".lbl").textContent=on?"Exit share view":"Share view";renderSource();render()};$("auto").onchange=sched;$("min").onchange=render;
 $("alerts-toggle").onclick=()=>{const o=$("alerts").classList.toggle("open");$("alerts-toggle").textContent=o?"Hide settings":"Show settings";$("alerts-toggle").setAttribute("aria-expanded",o)};
 function toggleRow(r){r.classList.toggle("open");const o=r.classList.contains("open");open[r.dataset.k]=o;r.setAttribute("aria-expanded",o)}
 
@@ -793,6 +969,104 @@ function planCore(r,side,zone){
   const buf=Math.max(0.003*price,0.5*(r.atr||0)),slp=long?zone.bot-buf:zone.top+buf,base=long?Math.max(price,zone.top):Math.min(price,zone.bot);
   return {zone,slp,tps:planLadder(zone,long)};
 }
+/* ---- Release 1: read-only card model + plain-English explanation ----
+   cardModel() COPIES values the engine already produced (analyse zones, planCore stop/targets,
+   the same past-price level sources tradePlan uses). It never recomputes or changes them.
+   explain() is a deterministic template: every number is fmt() of a model value. */
+const TF_MS={"5m":300000,"15m":900000,"1h":3600000};
+const TF_WORDS={"5m":"5 minutes","15m":"15 minutes","1h":"1 hour"};
+const CLOCK_SKEW_MS=60000; // a timestamp more than 60s in the future cannot be trusted
+function hhmm(ms){if(typeof ms!=="number"||!Number.isFinite(ms))return null;return new Date(ms).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} // same local format as the status line
+function finOr(v){return typeof v==="number"&&Number.isFinite(v)?v:null}
+function cardModel(r,side,zone,ctx){
+  ctx=ctx||{};
+  const long=side==="bull",tf=typeof ctx.tf==="string"?ctx.tf:null,tfms=TF_MS[tf]||null,now=finOr(ctx.now)??Date.now();
+  const price=r?finOr(r.price):null,candleTime=r?finOr(r.liveTime):null,fetchedAt=finOr(ctx.fetchedAt);
+  const sym=r&&typeof r.sym==="string"&&r.sym?r.sym:null;
+  const m={sym,pair:sym?sym+"/USDT":null,side,direction:long?"long":"short",tf,candleTime,fetchedAt,
+    source:typeof ctx.host==="string"&&ctx.host?ctx.host.replace(/^[a-z]+:\/\//i,"").replace(/\/.*$/,""):null,
+    price,zone:null,stop:null,targets:[],levels:{resistance:[],support:[]},invalidation:null,freshness:"fresh",staleReason:null};
+  if(!r||price==null||candleTime==null||!tfms){m.freshness="unavailable";m.staleReason="no-data";return m}
+  if(ctx.scanOk===false){m.freshness="stale";m.staleReason="scan-failed"}
+  else if(candleTime>now+CLOCK_SKEW_MS||(fetchedAt!=null&&fetchedAt>now+CLOCK_SKEW_MS)){m.freshness="stale";m.staleReason="future-timestamp"}
+  else if(now-candleTime>1.5*tfms){m.freshness="stale";m.staleReason="old-candle"}
+  if(m.freshness!=="fresh")return m; // stale or untrusted data never carries levels
+  let pc=null;try{pc=planCore(r,side,zone||null)}catch(e){pc=null}
+  const z=pc&&pc.zone&&finOr(pc.zone.top)!=null&&finOr(pc.zone.bot)!=null?pc.zone:null;
+  if(z){
+    m.zone={low:z.bot,high:z.top,mid:(z.top+z.bot)/2,state:z.tapped?"retested":"fresh",ageCandles:finOr(z.age),bos:!!z.bos,
+      position:z.inside?"inside":z.through?"through":"outside",time:finOr(z.time),formationTime:finOr(z.formationTime)};
+    m.stop=finOr(pc.slp)!=null?{price:pc.slp}:null;
+    m.targets=(pc.tps||[]).map((x,i)=>x&&finOr(x.p)!=null?{n:i+1,price:x.p,pct:typeof x.pct==="string"?x.pct:null,kind:"fixed-percent",label:x.label||null}:null).filter(Boolean);
+    m.invalidation="Void if a "+tf+" candle closes "+(long?"below ":"above ")+fmt(long?z.bot:z.top)+".";
+  }
+  try{ // same sources and ordering as tradePlan's "Resistance above" / "Support below" (nearest 3 each)
+    const all=dedupe([...planLevels(r),...planZoneLevels(r,z)]);
+    const pick=(list,role)=>list.slice(0,3).map(x=>{const l=roleLabel(x,price);return {price:l.p,kind:"past price",role,label:l.label}}).filter(x=>finOr(x.price)!=null);
+    m.levels.resistance=pick(all.filter(x=>x.p>price).sort((a,b)=>a.p-b.p),"resistance");
+    m.levels.support=pick(all.filter(x=>x.p<price).sort((a,b)=>b.p-a.p),"support");
+  }catch(e){}
+  return m;
+}
+function plainLevel(label){
+  const s=String(label||"");
+  if(/OB (high|low) edge/.test(s))return (/bullish/.test(s)?"edge of a bullish":"edge of a bearish")+" order block";
+  if(/now resistance/.test(s))return "old low that broke, now resistance";
+  if(/now support/.test(s))return "old high that broke, now support";
+  if(/equal highs/.test(s))return "repeated highs - tops at about the same price";
+  if(/equal lows/.test(s))return "repeated lows - bottoms at about the same price";
+  if(/swing high/.test(s))return "earlier turning-point high";
+  if(/swing low/.test(s))return "earlier turning-point low";
+  return "earlier price level";
+}
+const EXPLAIN_END="Educational only - not a buy/sell signal.";
+function explain(m){
+  const NA="not available",f=v=>typeof v==="number"&&Number.isFinite(v)?fmt(v):NA,t=v=>hhmm(v)||NA;
+  if(!m||m.freshness!=="fresh"){
+    const why=!m||m.freshness==="unavailable"?"Warning: market data for this card is not available right now."
+      :m.staleReason==="scan-failed"?"Warning: data is not updating (the latest refresh failed)."
+      :m.staleReason==="future-timestamp"?"Warning: the data time is in the future (a clock problem), so it cannot be trusted."
+      :"Warning: data is out of date (the newest candle is older than expected).";
+    const last=m&&(m.candleTime!=null||m.fetchedAt!=null)?" Last good data: candle "+t(m.candleTime)+", fetched "+t(m.fetchedAt)+" (local time).":"";
+    return [why+last+" Levels are hidden until fresh data arrives.",EXPLAIN_END].join("\n");
+  }
+  const long=m.direction==="long",z=m.zone,L=[];
+  L.push((m.pair||NA)+" on the "+(m.tf||NA)+" chart"+(TF_WORDS[m.tf]?" (each candle covers "+TF_WORDS[m.tf]+")":"")+". Newest candle opened at "+t(m.candleTime)+" (local time); data fetched at "+t(m.fetchedAt)+" from "+(m.source||NA)+".");
+  L.push("Price now: "+f(m.price)+".");
+  if(z){
+    const age=typeof z.ageCandles==="number"?z.ageCandles+" candle"+(z.ageCandles===1?"":"s")+" ago":"at a time that is "+NA;
+    const pos=z.position==="inside"?"Price is inside the zone right now."
+      :z.position==="through"?"Price is trading beyond the zone's far edge; the zone is dropped if the candle closes there."
+      :"Price is "+(long?"above":"below")+" the zone right now.";
+    L.push("Zone ("+(long?"long":"short")+" side): a "+(long?"bullish":"bearish")+" order block (zone where a strong move "+(long?"up":"down")+" started) from "+f(z.low)+" to "+f(z.high)+", middle "+f(z.mid)+". "
+      +(z.state==="retested"?"It is retested (price came back into it and it still holds).":"It is fresh (price has not come back into it since the move).")
+      +" It formed "+age+"."+(z.bos?" The move closed past an earlier turning "+(long?"high":"low")+" (break of structure).":"")+" "+pos);
+  }else L.push("Zone ("+(long?"long":"short")+" side): "+NA+" (no valid order block on this side).");
+  L.push("Stop reference: "+f(m.stop&&m.stop.price)+(m.stop?" - just beyond the zone's "+(long?"low":"high")+" edge plus a small buffer, where this pattern would no longer hold.":"."));
+  L.push(m.targets.length?"Targets (fixed percentage steps from the zone middle, not chart levels; they may never be reached): "+m.targets.map(x=>"Target "+x.n+" "+f(x.price)+(x.pct?" ("+x.pct+")":"")).join("; ")+".":"Targets: "+NA+".");
+  const lv=list=>list.length?list.map(x=>f(x.price)+" ("+plainLevel(x.label)+")").join(", "):NA;
+  L.push("Past price levels (where price turned before, not predictions): resistance above: "+lv(m.levels.resistance)+"; support below: "+lv(m.levels.support)+".");
+  L.push("What would cancel it: "+(m.invalidation||NA));
+  L.push(EXPLAIN_END);
+  return L.join("\n");
+}
+function explainHTML(m){
+  const txt=explain(m),warn=!m||m.freshness!=="fresh";
+  return `<div class="explain-body${warn?" warn":""}">${txt.split("\n").map(l=>`<p>${esc(l)}</p>`).join("")}</div>`;
+}
+// App-side context for cardModel (the only place globals are read).
+function modelCtx(){return {now:Date.now(),tf:dataTF,fetchedAt:updatedAt?updatedAt.getTime():null,host:usedHost,scanOk:!scanFailed}}
+function explainBlock(key,r,side,zone){
+  const on=!!open["ex"+key],id="ex-"+key.replace(/[^A-Za-z0-9_-]/g,"");
+  return `<div class="explain-wrap"><button class="act explain-btn" type="button" data-ex="${esc(key)}" aria-expanded="${on}" aria-controls="${id}">${ICON.info}<span>${on?"Hide explanation":"Explain"}</span></button><div class="explain" id="${id}"${on?"":" hidden"}>${explainHTML(cardModel(r,side,zone,modelCtx()))}</div></div>`;
+}
+function cardTime(r){const t=hhmm(r&&r.liveTime);return `<div class="card-time">${esc(dataTF)} · candle ${t||"not available"} (local time)</div>`}
+// Explain toggles: handled before the row/plan click handler so a tap never opens/closes the card.
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest(".explain-btn");
+  if(b){e.stopImmediatePropagation();const k=b.dataset.ex,on=!open["ex"+k];open["ex"+k]=on;b.setAttribute("aria-expanded",on);b.querySelector("span").textContent=on?"Hide explanation":"Explain";const box=b.parentElement.querySelector(".explain");if(box)box.hidden=!on;return}
+  if(e.target.closest&&e.target.closest(".explain"))e.stopImmediatePropagation();
+});
 /* Multi-day price-history levels (daily candles, closed only). Pure functions, no network. */
 const DAY=86400000,DWIN=[25,50,100,200],DLMODE="nearest"; // "repeat" = nearest level confirmed by 2+ pivots (else nearest single pivot); "nearest" = nearest level regardless of count
 function dlCloseClean(cs,nowMs){ // keep candles whose close time has passed (never the forming one), sorted, unique open times
@@ -859,11 +1133,11 @@ let fsState=null;
 function renderFS(){
   const el=$("fs");if(!fsState)return;const r=results.find(x=>x.sym===fsState.sym);if(!r){closeFS(true);return}
   dlEnsure(r.sym);dlArm();
-  const side=fsState.side,long=side==="bull",pc=planCore(r,side,r[side].ob),c=r.c,z=pc.zone;
+  const side=fsState.side,long=side==="bull",zsel=fsZone(r,side),pc=zsel.lost?{zone:null,tps:[]}:planCore(r,side,zsel.zone),c=r.c,z=pc.zone;
   el.innerHTML=`<div class="fh"><b>${r.sym}/USDT</b><span class="${long?"long":"short"}" style="color:${long?"var(--g)":"var(--r)"}">${long?"Candidate long":"Candidate short"}</span><span>${dataTF}</span><span class="sp"></span><b>${fmt(r.price)}</b><button class="fx" aria-label="Close full-screen chart">×</button></div><div class="fc"></div><div class="fl"></div><div class="ff"><span>Live price from the last Binance candle. Targets are fixed % steps from the zone middle, not chart levels. Levels are illustrative, not predictions.</span><a href="https://www.tradingview.com/chart/?symbol=BINANCE:${r.sym}USDT" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div>`;
   const DB=dlBlock(r.sym,r.price);
   const f=el.querySelector(".fl");
-  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?(x.pct?x.pct+" total · ":"")+x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>no valid zone on this side</em></div>`)+(fsState.allLv?DB.html:"");
+  f.innerHTML=(z?`<div class="pl"><span>Entry</span><b>${fmt(z.bot)} – ${fmt(z.top)}</b><em>${z.inside?"price in zone":"price "+fmt(r.price)}</em></div><div class="pl"><span>Stop</span><b style="color:#f97316">${fmt(pc.slp)}</b></div>`+pc.tps.map((x,i)=>`<div class="pl"><span>Target ${i+1}</span><b style="color:#60a5fa">${x?fmt(x.p):"n/a"}</b><em>${x?(x.pct?x.pct+" total · ":"")+x.label:""}</em></div>`).join(""):`<div class="pl"><span>Entry</span><b>n/a</b><em>${zsel.lost?"this card's zone is no longer valid on the latest data (closed through or aged out)":"no valid zone on this side"}</em></div>`)+(fsState.allLv?DB.html:"");
   const fc=el.querySelector(".fc"),W=Math.max(200,fc.clientWidth),H=Math.max(160,fc.clientHeight),padR=64,padT=12,volH=Math.max(30,Math.round(H*0.16)),padB=12+volH;
   let lo=Math.min(...c.map(k=>k.l)),hi=Math.max(...c.map(k=>k.h));
   const lv=[];
@@ -900,12 +1174,12 @@ function renderFS(){
   if(!fsState.allLv){fc.insertAdjacentHTML("beforeend",DB.chip+(fsState.sheet?`<div class="fl dlsh">${DB.sheet}</div>`:""))}
 
 }
-function openFS(sym,side){fsState={sym,side};delete DL.tries[sym];document.body.classList.add("fso");$("fs").classList.add("on");try{history.pushState({fs:1},"")}catch(e){}renderFS();const x=$("fs").querySelector(".fx");x&&x.focus()}
+function openFS(sym,side,zid){fsState={sym,side,zid:zid||null};delete DL.tries[sym];document.body.classList.add("fso");$("fs").classList.add("on");try{history.pushState({fs:1},"")}catch(e){}renderFS();const x=$("fs").querySelector(".fx");x&&x.focus()}
 function closeFS(fromPop){if(!fsState)return;fsState=null;clearTimeout(dlTimer);dlTimer=null;$("fs").classList.remove("on");$("fs").innerHTML="";document.body.classList.remove("fso");if(!fromPop&&history.state&&history.state.fs){try{history.back()}catch(e){}}}
 window.addEventListener("popstate",()=>{if(fsState)closeFS(true)});
 window.addEventListener("resize",()=>{if(fsState)renderFS()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&fsState)closeFS()});
-document.addEventListener("click",e=>{const dc=e.target.closest("#fs .dlchip,#fs .dlclose");if(dc&&fsState){e.preventDefault();e.stopPropagation();fsState.sheet=dc.classList.contains("dlclose")?false:!fsState.sheet;renderFS();return}const da=e.target.closest(".dlall");if(da&&fsState){e.preventDefault();e.stopPropagation();fsState.allLv=!fsState.allLv;fsState.sheet=false;renderFS();return}const chartButton=e.target.closest(".position-chart");if(chartButton){e.stopPropagation();openFS(chartButton.dataset.sym,chartButton.dataset.side);return}if(e.target.closest("#fs .fx")){closeFS();return}const chEl=e.target.closest(".ch");if(chEl){const rw=chEl.closest(".row,.position-row");const mm=rw&&/(bull|bear)([A-Z0-9]+)$/.exec(rw.dataset.k);if(mm){openFS(mm[2],mm[1]);return}}const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
+document.addEventListener("click",e=>{const dc=e.target.closest("#fs .dlchip,#fs .dlclose");if(dc&&fsState){e.preventDefault();e.stopPropagation();fsState.sheet=dc.classList.contains("dlclose")?false:!fsState.sheet;renderFS();return}const da=e.target.closest(".dlall");if(da&&fsState){e.preventDefault();e.stopPropagation();fsState.allLv=!fsState.allLv;fsState.sheet=false;renderFS();return}const chartButton=e.target.closest(".position-chart");if(chartButton){e.stopPropagation();openFS(chartButton.dataset.sym,chartButton.dataset.side,chartButton.dataset.zf?{time:+chartButton.dataset.zt,formationTime:+chartButton.dataset.zf}:null);return}if(e.target.closest("#fs .fx")){closeFS();return}const chEl=e.target.closest(".ch");if(chEl){const rw=chEl.closest(".row,.position-row");const mm=rw&&/(bull|bear)([A-Z0-9]+)$/.exec(rw.dataset.k);if(mm){openFS(mm[2],mm[1]);return}}const pl=e.target.closest(".plan-link");if(pl){const u=location.origin==="null"||location.protocol==="file:"?location.href.split(/[?#]/)[0]:location.origin+location.pathname;const url=`${u}?sym=${pl.dataset.sym}&tf=${tf}&side=${pl.dataset.side}`;
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{pl.textContent="Link copied"},()=>{window.prompt("Copy this link:",url)});return}
   if(e.target.closest(".plan"))return;const r=e.target.closest(".row,.position-row");if(r)toggleRow(r)});
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".row,.position-row")){e.preventDefault();toggleRow(e.target)}});

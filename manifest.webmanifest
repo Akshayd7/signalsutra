@@ -1,18 +1,21 @@
 {
  "name": "SignalSutra Guide",
- "short_name": "SignalSutra Guide",
- "description": "Crypto structure scanner for the top Binance USDT pairs. Educational tool, not financial advice.",
+ "short_name": "SignalSutra",
+ "description": "Educational crypto structure scanner for the top Binance USDT pairs: candle-pattern zones, past price levels and plain-English explanations. Not financial advice.",
  "id": "./",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
  "orientation": "portrait",
- "background_color": "#0b0f17",
- "theme_color": "#0b0f17",
+ "lang": "en",
+ "dir": "ltr",
+ "background_color": "#0a0e16",
+ "theme_color": "#0a0e16",
  "categories": [
   "finance",
-  "utilities"
+  "education"
  ],
+ "prefer_related_applications": false,
  "icons": [
   {
    "src": "icons/icon-192.png",
@@ -31,6 +34,28 @@
    "sizes": "512x512",
    "type": "image/png",
    "purpose": "maskable"
+  },
+  {
+   "src": "icons/icon.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ],
+ "screenshots": [
+  {
+   "src": "screenshots/main-412x900.png",
+   "sizes": "824x1800",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Position Builder: coins inside a valid zone, with timeframe and candle time"
+  },
+  {
+   "src": "screenshots/explain-412x900.png",
+   "sizes": "824x1800",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Plain-English explanation of a zone card"
   }
  ]
 }
