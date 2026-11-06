@@ -230,6 +230,9 @@ body>*{order:10}header{order:1}#intro{order:2}#status,#src{order:3}#positions{or
 <script>
 const HOSTS=["https://data-api.binance.vision","https://api.binance.com","https://api1.binance.com"];
 let isSilent=false,baselined=new Set(),usedHost=null,stat=null,deep=null,host=null,tf="1h",timer=null,busy=false,results=[],open={},dataTF="1h",updatedAt=null;
+let scanFailed=false; // true after a failed scan until the next successful one (old cards stay, dimmed, explanations marked stale)
+// Inline SVG icons (no icon font, no CDN). Decorative: the button text carries the meaning.
+const ICON={info:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',chart:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 16V9M12 16V5M17 16v-5"/></svg>',refresh:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>',share:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></svg>',install:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></svg>'};
 const STABLE=/^(USDC|FDUSD|TUSD|USDP|DAI|BUSD|USDE|EUR|EURI|AEUR|XUSD|USD1|PAXG|XAUT|WBTC|WBETH|BFUSD|UST|RLUSD|USDG|USDS|PYUSD|USDD|FRAX|GUSD|LUSD|SUSD|USDT0)/;
 const pegged=t=>{const l=+t.lastPrice,h=+t.highPrice,lo=+t.lowPrice;return l>0.97&&l<1.03&&(h-lo)/l<0.01}; // stablecoin-like: near $1 with under 1% daily range
 const $=id=>document.getElementById(id);
@@ -585,7 +588,7 @@ function rowHTML(r,side){
   const obTxt=o?`<span><span title="Order block: candle-pattern zone before a strong move (inferred)">Entry zone</span> <b>${fmt(o.bot)} – ${fmt(o.top)}</b> ${o.inside?'<span class="tag in">in zone</span>':o.through?'<span class="tag" title="Live price is beyond the far edge. The zone is dropped if the candle closes there.">price through zone</span>':`(${o.dist.toFixed(o.dist<10?1:0)}% away)`}${o.bos?' <span class="tag" title="Break of structure: the move closed beyond the most recent unbroken swing">BOS</span>':""}${o.tapped&&!o.inside?' <span class="tag" title="A closed candle traded back into the zone after the move. The zone is still valid.">retested</span>':""}</span>`:`<span>No valid zone</span>`;
   const p=d.pool,pd=p?Math.abs(p.p-r.price)/r.price*100:0;
   const lq=p?`<span class="lq">${side=="bull"?"Resistance (reference level) above":"Support (reference level) below"} <b>${fmt(p.p)}</b> (${pd.toFixed(pd<10?1:0)}%)${p.eq?" · equal ×"+p.n:" · swing"}</span>`:`<span class="lq">No nearby pool</span>`;
-  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}<span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${spark(r,side)}${volPanel(r)}${tradePlan(r,side,o)}${aiBlock(r.sym)}</div></div>`;
+  return `<div class="row${open[side+r.sym]?" open":""}" data-k="${side+r.sym}" role="button" tabindex="0" aria-expanded="${!!open[side+r.sym]}"><div class="top"><span class="sym">${r.sym}${r.sym==="PAXG"?' <span class="tag" title="PAXG is a gold-backed token traded on Binance spot against USDT">gold</span>':""}</span><span class="px">${fmt(r.price)}</span><span class="chg" style="color:${r.chg>=0?"var(--g)":"var(--r)"}">${r.chg>=0?"+":""}${r.chg.toFixed(r.chg<10&&r.chg>-10?1:0)}%</span><span class="score" title="Heuristic momentum + structure score (0-100). Not a probability or forecast.">${d.score}</span></div><div class="meta">${obTxt}${lq}<span class="lvchip" data-lv="${r.sym}"></span></div><div class="det">${spark(r,side)}${volPanel(r)}${tradePlan(r,side,o)}${explainBlock(side+r.sym,r,side,o)}${aiBlock(r.sym)}</div></div>`;
 }
 // Distance is 0 inside, otherwise the percent gap from price to the near edge.
 function positionDistance(price,o,side){
@@ -662,7 +665,7 @@ function renderPositions(){
   for(const [side,name] of [["bull","long"],["bear","short"]]){
     const all=positionRows(side),rows=all.slice(0,share?5:6);
     $("position-"+name+"-count").textContent=rows.length<all.length?`top ${rows.length} of ${all.length}`:`${all.length} coin${all.length===1?"":"s"}`;
-    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span><button class="act position-chart" data-sym="${r.sym}" data-side="${side}" aria-label="Open ${r.sym} chart">Chart</button></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span class="age">Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span><span class="mtf" data-mtf="${r.sym}|${side}" title="Same zone rules checked on the other timeframes (5m/15m/1h). Not an independent confirmation: every timeframe reads the same Binance spot prices. * = some timeframes unavailable, partial read.">MTF \u2026</span></div>${posWhy(r,side,o)}<div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
+    $("position-"+name).innerHTML=rows.length?rows.map(({r,o,inside,distance})=>`<div class="position-row${open["pos"+side+r.sym]?" open":""}" data-k="pos${side}${r.sym}" role="button" tabindex="0" aria-expanded="${!!open["pos"+side+r.sym]}"><div class="position-top"><b>${r.sym}</b><span class="position-${name}">${name==="long"?"Long":"Short"}</span><span class="position-state">${o.tapped?"retested":"fresh"}</span><span class="position-near">${inside?"in zone":"near zone"}</span><button class="act position-chart" data-sym="${r.sym}" data-side="${side}" aria-label="Open ${r.sym} chart">Chart</button></div><div class="meta"><span>Zone <b>${fmt(o.bot)} – ${fmt(o.top)}</b></span><span>Price <b>${fmt(r.price)}</b></span><span class="age">Age <b>${o.age} candles</b></span><span class="lvchip" data-lv="${r.sym}"></span><span class="mtf" data-mtf="${r.sym}|${side}" title="Same zone rules checked on the other timeframes (5m/15m/1h). Not an independent confirmation: every timeframe reads the same Binance spot prices. * = some timeframes unavailable, partial read.">MTF \u2026</span></div>${posWhy(r,side,o)}${explainBlock("pos"+side+r.sym,r,side,o)}<div class="det">${tradePlan(r,side,o)}${volPanel(r)}</div></div>`).join(""):'<div class="empty">No coin is inside a zone right now.</div>';
   }
   document.querySelectorAll("[data-mtf]").forEach(el=>{const p=el.dataset.mtf.split("|");mtfPaint(p[0],p[1])});
 }
@@ -793,6 +796,104 @@ function planCore(r,side,zone){
   const buf=Math.max(0.003*price,0.5*(r.atr||0)),slp=long?zone.bot-buf:zone.top+buf,base=long?Math.max(price,zone.top):Math.min(price,zone.bot);
   return {zone,slp,tps:planLadder(zone,long)};
 }
+/* ---- Release 1: read-only card model + plain-English explanation ----
+   cardModel() COPIES values the engine already produced (analyse zones, planCore stop/targets,
+   the same past-price level sources tradePlan uses). It never recomputes or changes them.
+   explain() is a deterministic template: every number is fmt() of a model value. */
+const TF_MS={"5m":300000,"15m":900000,"1h":3600000};
+const TF_WORDS={"5m":"5 minutes","15m":"15 minutes","1h":"1 hour"};
+const CLOCK_SKEW_MS=60000; // a timestamp more than 60s in the future cannot be trusted
+function hhmm(ms){if(typeof ms!=="number"||!Number.isFinite(ms))return null;const d=new Date(ms);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function finOr(v){return typeof v==="number"&&Number.isFinite(v)?v:null}
+function cardModel(r,side,zone,ctx){
+  ctx=ctx||{};
+  const long=side==="bull",tf=typeof ctx.tf==="string"?ctx.tf:null,tfms=TF_MS[tf]||null,now=finOr(ctx.now)??Date.now();
+  const price=r?finOr(r.price):null,candleTime=r?finOr(r.liveTime):null,fetchedAt=finOr(ctx.fetchedAt);
+  const sym=r&&typeof r.sym==="string"&&r.sym?r.sym:null;
+  const m={sym,pair:sym?sym+"/USDT":null,side,direction:long?"long":"short",tf,candleTime,fetchedAt,
+    source:typeof ctx.host==="string"&&ctx.host?ctx.host.replace(/^[a-z]+:\/\//i,"").replace(/\/.*$/,""):null,
+    price,zone:null,stop:null,targets:[],levels:{resistance:[],support:[]},invalidation:null,freshness:"fresh",staleReason:null};
+  if(!r||price==null||candleTime==null||!tfms){m.freshness="unavailable";m.staleReason="no-data";return m}
+  if(ctx.scanOk===false){m.freshness="stale";m.staleReason="scan-failed"}
+  else if(candleTime>now+CLOCK_SKEW_MS||(fetchedAt!=null&&fetchedAt>now+CLOCK_SKEW_MS)){m.freshness="stale";m.staleReason="future-timestamp"}
+  else if(now-candleTime>1.5*tfms){m.freshness="stale";m.staleReason="old-candle"}
+  if(m.freshness!=="fresh")return m; // stale or untrusted data never carries levels
+  let pc=null;try{pc=planCore(r,side,zone||null)}catch(e){pc=null}
+  const z=pc&&pc.zone&&finOr(pc.zone.top)!=null&&finOr(pc.zone.bot)!=null?pc.zone:null;
+  if(z){
+    m.zone={low:z.bot,high:z.top,mid:(z.top+z.bot)/2,state:z.tapped?"retested":"fresh",ageCandles:finOr(z.age),bos:!!z.bos,
+      position:z.inside?"inside":z.through?"through":"outside",time:finOr(z.time),formationTime:finOr(z.formationTime)};
+    m.stop=finOr(pc.slp)!=null?{price:pc.slp}:null;
+    m.targets=(pc.tps||[]).map((x,i)=>x&&finOr(x.p)!=null?{n:i+1,price:x.p,pct:typeof x.pct==="string"?x.pct:null,kind:"fixed-percent",label:x.label||null}:null).filter(Boolean);
+    m.invalidation="Void if a "+tf+" candle closes "+(long?"below ":"above ")+fmt(long?z.bot:z.top)+".";
+  }
+  try{ // same sources and ordering as tradePlan's "Resistance above" / "Support below" (nearest 3 each)
+    const all=dedupe([...planLevels(r),...planZoneLevels(r,z)]);
+    const pick=(list,role)=>list.slice(0,3).map(x=>{const l=roleLabel(x,price);return {price:l.p,kind:"past price",role,label:l.label}}).filter(x=>finOr(x.price)!=null);
+    m.levels.resistance=pick(all.filter(x=>x.p>price).sort((a,b)=>a.p-b.p),"resistance");
+    m.levels.support=pick(all.filter(x=>x.p<price).sort((a,b)=>b.p-a.p),"support");
+  }catch(e){}
+  return m;
+}
+function plainLevel(label){
+  const s=String(label||"");
+  if(/OB (high|low) edge/.test(s))return (/bullish/.test(s)?"edge of a bullish":"edge of a bearish")+" order block";
+  if(/now resistance/.test(s))return "old low that broke, now resistance";
+  if(/now support/.test(s))return "old high that broke, now support";
+  if(/equal highs/.test(s))return "repeated highs - tops at about the same price";
+  if(/equal lows/.test(s))return "repeated lows - bottoms at about the same price";
+  if(/swing high/.test(s))return "earlier turning-point high";
+  if(/swing low/.test(s))return "earlier turning-point low";
+  return "earlier price level";
+}
+const EXPLAIN_END="Educational only - not a buy/sell signal.";
+function explain(m){
+  const NA="not available",f=v=>typeof v==="number"&&Number.isFinite(v)?fmt(v):NA,t=v=>hhmm(v)||NA;
+  if(!m||m.freshness!=="fresh"){
+    const why=!m||m.freshness==="unavailable"?"Warning: market data for this card is not available right now."
+      :m.staleReason==="scan-failed"?"Warning: data is not updating (the latest refresh failed)."
+      :m.staleReason==="future-timestamp"?"Warning: the data time is in the future (a clock problem), so it cannot be trusted."
+      :"Warning: data is out of date (the newest candle is older than expected).";
+    const last=m&&(m.candleTime!=null||m.fetchedAt!=null)?" Last good data: candle "+t(m.candleTime)+", fetched "+t(m.fetchedAt)+" (local time).":"";
+    return [why+last+" Levels are hidden until fresh data arrives.",EXPLAIN_END].join("\n");
+  }
+  const long=m.direction==="long",z=m.zone,L=[];
+  L.push((m.pair||NA)+" on the "+(m.tf||NA)+" chart"+(TF_WORDS[m.tf]?" (each candle covers "+TF_WORDS[m.tf]+")":"")+". Newest candle opened at "+t(m.candleTime)+" (local time); data fetched at "+t(m.fetchedAt)+" from "+(m.source||NA)+".");
+  L.push("Price now: "+f(m.price)+".");
+  if(z){
+    const age=typeof z.ageCandles==="number"?z.ageCandles+" candle"+(z.ageCandles===1?"":"s")+" ago":"at a time that is "+NA;
+    const pos=z.position==="inside"?"Price is inside the zone right now."
+      :z.position==="through"?"Price is trading beyond the zone's far edge; the zone is dropped if the candle closes there."
+      :"Price is "+(long?"above":"below")+" the zone right now.";
+    L.push("Zone ("+(long?"long":"short")+" side): a "+(long?"bullish":"bearish")+" order block (zone where a strong move "+(long?"up":"down")+" started) from "+f(z.low)+" to "+f(z.high)+", middle "+f(z.mid)+". "
+      +(z.state==="retested"?"It is retested (price came back into it and it still holds).":"It is fresh (price has not come back into it since the move).")
+      +" It formed "+age+"."+(z.bos?" The move closed past an earlier turning "+(long?"high":"low")+" (break of structure).":"")+" "+pos);
+  }else L.push("Zone ("+(long?"long":"short")+" side): "+NA+" (no valid order block on this side).");
+  L.push("Stop reference: "+f(m.stop&&m.stop.price)+(m.stop?" - just beyond the zone's "+(long?"low":"high")+" edge plus a small buffer, where this pattern would no longer hold.":"."));
+  L.push(m.targets.length?"Targets (fixed percentage steps from the zone middle, not chart levels; they may never be reached): "+m.targets.map(x=>"Target "+x.n+" "+f(x.price)+(x.pct?" ("+x.pct+")":"")).join("; ")+".":"Targets: "+NA+".");
+  const lv=list=>list.length?list.map(x=>f(x.price)+" ("+plainLevel(x.label)+")").join(", "):NA;
+  L.push("Past price levels (where price turned before, not predictions): resistance above: "+lv(m.levels.resistance)+"; support below: "+lv(m.levels.support)+".");
+  L.push("What would cancel it: "+(m.invalidation||NA));
+  L.push(EXPLAIN_END);
+  return L.join("\n");
+}
+function explainHTML(m){
+  const txt=explain(m),warn=!m||m.freshness!=="fresh";
+  return `<div class="explain-body${warn?" warn":""}">${txt.split("\n").map(l=>`<p>${esc(l)}</p>`).join("")}</div>`;
+}
+// App-side context for cardModel (the only place globals are read).
+function modelCtx(){return {now:Date.now(),tf:dataTF,fetchedAt:updatedAt?updatedAt.getTime():null,host:usedHost,scanOk:!scanFailed}}
+function explainBlock(key,r,side,zone){
+  const on=!!open["ex"+key],id="ex-"+key.replace(/[^A-Za-z0-9_-]/g,"");
+  return `<div class="explain-wrap"><button class="act explain-btn" type="button" data-ex="${esc(key)}" aria-expanded="${on}" aria-controls="${id}">${ICON.info}<span>${on?"Hide explanation":"Explain"}</span></button><div class="explain" id="${id}"${on?"":" hidden"}>${explainHTML(cardModel(r,side,zone,modelCtx()))}</div></div>`;
+}
+function cardTime(r){const t=hhmm(r&&r.liveTime);return `<div class="card-time">${esc(dataTF)} · candle ${t||"not available"} (local time)</div>`}
+// Explain toggles: handled before the row/plan click handler so a tap never opens/closes the card.
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest(".explain-btn");
+  if(b){e.stopImmediatePropagation();const k=b.dataset.ex,on=!open["ex"+k];open["ex"+k]=on;b.setAttribute("aria-expanded",on);b.querySelector("span").textContent=on?"Hide explanation":"Explain";const box=b.parentElement.querySelector(".explain");if(box)box.hidden=!on;return}
+  if(e.target.closest&&e.target.closest(".explain"))e.stopImmediatePropagation();
+});
 /* Multi-day price-history levels (daily candles, closed only). Pure functions, no network. */
 const DAY=86400000,DWIN=[25,50,100,200],DLMODE="nearest"; // "repeat" = nearest level confirmed by 2+ pivots (else nearest single pivot); "nearest" = nearest level regardless of count
 function dlCloseClean(cs,nowMs){ // keep candles whose close time has passed (never the forming one), sorted, unique open times
