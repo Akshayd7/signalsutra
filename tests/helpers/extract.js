@@ -32,7 +32,8 @@ function grab(src, name) {
   const re = new RegExp("(^|[^\\w$.])(function " + name.replace(/\$/g, "\\$") + "\\(|const " + name.replace(/\$/g, "\\$") + "=)", "m");
   const m = re.exec(src);
   if (!m) throw new Error("declaration not found: " + name);
-  const start = m.index + m[1].length;
+  let start = m.index + m[1].length;
+  if (src.slice(start - 6, start) === "async ") start -= 6; // keep `async` on async functions
   if (m[2].startsWith("function")) {
     const close = src.indexOf(")", start);
     let j = src.indexOf("{", close), d = 0, k = j;
@@ -54,10 +55,11 @@ function grab(src, name) {
 }
 
 // Evaluate the named declarations together with an optional prelude (stubs for browser globals).
-function load(html, names, prelude) {
+// `extra` = names defined in the prelude that should also be returned (test hooks).
+function load(html, names, prelude, extra) {
   const src = scriptOf(html);
   const code = names.map(n => grab(src, n)).join("\n");
-  const exportsList = names.filter(n => !/^[A-Z_]+$/.test(n) || true).join(",");
+  const exportsList = names.concat(extra || []).join(",");
   // eslint-disable-next-line no-new-func
   return new Function((prelude || "") + "\n" + code + "\nreturn {" + exportsList + "};")();
 }
